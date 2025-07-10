@@ -10,7 +10,7 @@ const BookingTable = () => {
   const [loading, setLoading] = useState(true);
 
   const type = user?.hostType?.[0] || "hotel";
-
+//get api
   const getApiUrl = () => {
     const base = "http://localhost:4000/api";
     if (type === "hotel") return `${base}/host/dashboard/bookings`;
