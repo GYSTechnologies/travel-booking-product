@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -15,12 +14,15 @@ import {
   Camera,
   Upload,
   X,
+  FileText,
 } from "lucide-react";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, bookingData } = useAuth();
+  const [kycDocs, setKycDocs] = useState([]);
+  const [docTypes, setDocTypes] = useState([]);
 
   // ✅ Detect if host is registering via ?role=host
   const isHostRegistration =
@@ -68,6 +70,17 @@ const RegisterPage = () => {
         }
       }
 
+      // ✅ Add KYC documents
+      if (formData.role === "host") {
+        kycDocs.forEach((file) => {
+          if (file) form.append("documents", file);
+        });
+
+        docTypes.forEach((type) => {
+          form.append("documentTypes", type);
+        });
+      }
+
       const res = await axios.post(
         "http://localhost:4000/api/auth/register",
         form,
@@ -78,7 +91,6 @@ const RegisterPage = () => {
         }
       );
 
-      // Save email for OTP verification
       localStorage.setItem("pendingEmail", formData.email);
       navigate("/verify-otp");
     } catch (err) {
@@ -171,27 +183,31 @@ const RegisterPage = () => {
           </div>
 
           {/* Input Fields */}
-          {[["username", User], ["email", Mail], ["password", Lock], ["phone", Phone], ["address", MapPin]].map(
-            ([name, Icon]) => (
-              <div className="mb-6" key={name}>
-                <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
-                  {name}
-                </label>
-                <div className="relative">
-                  <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type={name === "password" ? "password" : "text"}
-                    name={name}
-                    required={name !== "phone" && name !== "address"}
-                    value={formData[name]}
-                    onChange={handleChange}
-                    placeholder={`Enter your ${name}`}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 bg-white/60 transition"
-                  />
-                </div>
+          {[
+            ["username", User],
+            ["email", Mail],
+            ["password", Lock],
+            ["phone", Phone],
+            ["address", MapPin],
+          ].map(([name, Icon]) => (
+            <div className="mb-6" key={name}>
+              <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
+                {name}
+              </label>
+              <div className="relative">
+                <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type={name === "password" ? "password" : "text"}
+                  name={name}
+                  required={name !== "phone" && name !== "address"}
+                  value={formData[name]}
+                  onChange={handleChange}
+                  placeholder={`Enter your ${name}`}
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 bg-white/60 transition"
+                />
               </div>
-            )
-          )}
+            </div>
+          ))}
 
           {/* Role Select */}
           <div className="mb-6">
@@ -294,6 +310,195 @@ const RegisterPage = () => {
             </div>
           )}
 
+          {/* KYC Document Upload (Only for Host) */}
+          {/* {formData.role === "host" && (
+            <div className="mb-6 p-4 bg-white rounded-xl border border-gray-200">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Upload Mandatory KYC Documents
+              </label>
+              <div className="space-y-4">
+                {[
+                  { label: "Aadhaar Card", docType: "aadhaar" },
+                  { label: "PAN Card", docType: "pan" },
+                ].map((item, index) => (
+                  <div key={item.docType}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {item.label}
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      required
+                      onChange={(e) => {
+                        const updated = [...kycDocs];
+                        updated[index] = e.target.files[0];
+                        setKycDocs(updated);
+
+                        const types = [...docTypes];
+                        types[index] = item.docType;
+                        setDocTypes(types);
+                      }}
+                      className="block w-full text-sm text-gray-700 border border-gray-300 rounded-md file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )} */}
+
+          {/* Submit */}
+          {/* <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold hover:from-emerald-600 hover:to-teal-600 transition disabled:opacity-50 shadow-lg"
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent animate-spin rounded-full mr-2" />
+                Creating Account...
+              </div>
+            ) : (
+              "Create Account"
+            )}
+          </button> */}
+
+          {/* KYC Document Upload (Only for Host) */}
+          {formData.role === "host" && (
+            <div className="mb-6 p-4 bg-white rounded-xl border border-gray-200">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Upload Mandatory KYC Documents
+              </label>
+              <div className="space-y-4">
+                {[
+                  { label: "Aadhaar Card", docType: "aadhaar" },
+                  { label: "PAN Card", docType: "pan" },
+                ].map((item, index) => (
+                  <div key={item.docType}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {item.label}
+                    </label>
+
+                    {!kycDocs[index] ? (
+                      <label
+                        className={`cursor-pointer flex items-center justify-center px-4 py-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-100 transition ${
+                          isLoading ? "pointer-events-none opacity-50" : ""
+                        }`}
+                      >
+                        <div className="text-center">
+                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <span className="text-sm font-medium text-gray-700">
+                            Upload {item.label}
+                          </span>
+                          <p className="text-xs text-gray-500 mt-1">
+                            JPG, PNG, PDF up to 5MB
+                          </p>
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          required
+                          disabled={isLoading}
+                          onChange={(e) => {
+                            if (e.target.files[0]) {
+                              const updated = [...kycDocs];
+                              updated[index] = e.target.files[0];
+                              setKycDocs(updated);
+
+                              const types = [...docTypes];
+                              types[index] = item.docType;
+                              setDocTypes(types);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    ) : (
+                      <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center">
+                            {kycDocs[index].type.startsWith("image/") ? (
+                              <Camera className="w-5 h-5 text-blue-500 mr-2" />
+                            ) : (
+                              <FileText className="w-5 h-5 text-red-500 mr-2" />
+                            )}
+                            <span className="text-sm font-medium text-gray-700">
+                              {kycDocs[index].name}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={isLoading}
+                            onClick={() => {
+                              const updated = [...kycDocs];
+                              updated[index] = null;
+                              setKycDocs(updated);
+
+                              const types = [...docTypes];
+                              types[index] = null;
+                              setDocTypes(types);
+                            }}
+                            className={`p-1 text-red-500 hover:bg-red-50 rounded transition ${
+                              isLoading ? "pointer-events-none opacity-50" : ""
+                            }`}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* File Preview */}
+                        {kycDocs[index].type.startsWith("image/") && (
+                          <div className="mb-3">
+                            <img
+                              src={URL.createObjectURL(kycDocs[index])}
+                              alt={`${item.label} preview`}
+                              className="w-full h-32 object-cover rounded-lg border"
+                            />
+                          </div>
+                        )}
+
+                        {/* File Info */}
+                        <div className="text-xs text-gray-500 space-y-1">
+                          <p>
+                            Size:{" "}
+                            {(kycDocs[index].size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                          <p>Type: {kycDocs[index].type}</p>
+                        </div>
+
+                        {/* Change File Button */}
+                        <label
+                          className={`cursor-pointer inline-flex items-center px-3 py-1 mt-3 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition ${
+                            isLoading ? "pointer-events-none opacity-50" : ""
+                          }`}
+                        >
+                          <Upload className="w-4 h-4 mr-1" />
+                          Change File
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            disabled={isLoading}
+                            onChange={(e) => {
+                              if (e.target.files[0]) {
+                                const updated = [...kycDocs];
+                                updated[index] = e.target.files[0];
+                                setKycDocs(updated);
+
+                                const types = [...docTypes];
+                                types[index] = item.docType;
+                                setDocTypes(types);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Submit */}
           <button
             type="submit"
@@ -317,7 +522,9 @@ const RegisterPage = () => {
               <button
                 type="button"
                 onClick={() =>
-                  navigate(formData.role === "host" ? "/login?type=host" : "/login")
+                  navigate(
+                    formData.role === "host" ? "/login?type=host" : "/login"
+                  )
                 }
                 className="text-emerald-600 hover:text-emerald-700 font-medium hover:underline transition"
               >

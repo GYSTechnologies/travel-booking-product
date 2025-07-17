@@ -41,6 +41,57 @@ const userSchema = new mongoose.Schema(
       enum: ["hotel", "services", "experiences"],
       default: [],
     },
+
+    //add for super admin
+    isOtpVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    isKycSubmitted: {
+      type: Boolean,
+      default: false,
+    },
+
+    kycDocuments: [
+      {
+        docType: {
+          type: String, // aadhaar, pan, etc.
+        },
+        url: {
+          type: String,
+        },
+        status: {
+          type: String,
+          enum: ["pending", "approved", "rejected"],
+          default: "pending",
+        },
+        rejectionReason: {
+          type: String,
+          default: "",
+        },
+      },
+    ],
+
+    isHostApproved: {
+      type: Boolean,
+      default: false,
+    },
+
+    hostRejectionReason: {
+      type: String,
+      default: "",
+    },
+
+    resubmissionCount: {
+      type: Number,
+      default: 0,
+    },
+
+    hasActiveSubscription: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

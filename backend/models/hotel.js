@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 
 const hotelSchema = new mongoose.Schema(
@@ -25,10 +26,10 @@ const hotelSchema = new mongoose.Schema(
     },
     location: {
       type: String,
-      required: true, 
+      required: true,
     },
     images: {
-      type: [String], 
+      type: [String],
       default: [],
     },
     amenities: {
@@ -47,11 +48,56 @@ const hotelSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    // ✅ Added for per-date room availability tracking
+    availability: [
+      {
+        date: {
+          type: String, // Format: "YYYY-MM-DD"
+          required: true,
+        },
+        bookedRooms: {
+          type: Number,
+          default: 0,
+        },
+      },
+    ],
+
+    // Admin Control
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    documents: [
+      {
+        docType: {
+          type: String,
+        },
+        url: {
+          type: String,
+        },
+        status: {
+          type: String,
+          enum: ["pending", "approved", "rejected"],
+          default: "pending",
+        },
+        rejectionReason: {
+          type: String,
+          default: "",
+        },
+      },
+    ],
+    rejectionReason: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );
 
-mongoose.model("hotel", hotelSchema);   // for refPath: "type" = "hotel"
-const Hotel = mongoose.model("Hotel", hotelSchema); 
+// Use lowercase for refPath: "type" = "hotel"
+mongoose.model("hotel", hotelSchema);
 
+const Hotel = mongoose.model("Hotel", hotelSchema);
 export default Hotel;

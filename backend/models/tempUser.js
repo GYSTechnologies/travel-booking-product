@@ -15,6 +15,14 @@ const tempUserSchema = new mongoose.Schema({
     default: [],
   },
 
+  // 🆕 KYC Documents (array of objects)
+  kycDocuments: [
+    {
+      docType: { type: String }, 
+      url: { type: String }
+    }
+  ],
+
   createdAt: { type: Date, default: Date.now, expires: 300 }, 
 });
 

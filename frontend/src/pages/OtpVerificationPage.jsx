@@ -80,28 +80,31 @@ const VerifyOtpPage = () => {
       localStorage.removeItem("pendingRole");
 
       // Redirect based on role or booking state
-      if (isHost) {
-        // 🧠 Check subscription status before redirecting host
+
+      const role = user.role?.toLowerCase();
+      console.log("✅ Role:", role);
+
+      if (role !== "user") {
+        // All hosts, services, experiences
         const subRes = await axios.get(
           "http://localhost:4000/api/subscription/status",
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
 
         const { isActive } = subRes.data;
 
-        if (isActive) {
-          navigate("/host/dashboard");
-        } else {
+        if (!isActive) {
           navigate("/host/subscription");
+        } else if (!user.isHostApproved) {
+          navigate("/waiting-approval");
+        } else {
+          navigate("/host/dashboard");
         }
-      } else if (bookingData) {
-        navigate("/confirm-booking");
       } else {
-        navigate("/");
+        // user role
+        bookingData ? navigate("/confirm") : navigate("/");
       }
     } catch (err) {
       setError(err.response?.data?.message || "Invalid OTP. Try again.");

@@ -1,4 +1,4 @@
-// utils/updateAverageRating.js
+
 import Review from "../models/review.js";
 import Hotel from "../models/hotel.js";
 import Experience from "../models/experience.js";

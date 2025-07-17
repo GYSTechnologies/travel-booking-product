@@ -19,7 +19,11 @@ const ExperienceDetail = () => {
     guests: Number(params.get("guests")) || 1,
   });
 
-  const isFormComplete = formData.date && formData.guests > 0;
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedSlotData, setSelectedSlotData] = useState(null);
+
+  // const isFormComplete = formData.date && formData.guests > 0;
 
   useEffect(() => {
     const fetchExperience = async () => {
@@ -34,6 +38,23 @@ const ExperienceDetail = () => {
     };
     fetchExperience();
   }, [id]);
+
+  useEffect(() => {
+    const fetchSlots = async () => {
+      if (!formData.date) return;
+      try {
+        const res = await axios.get(
+          `http://localhost:4000/api/experiences/${id}/slots?date=${formData.date}`
+        );
+        console.log("Fetched slots:", res.data);
+        setAvailableSlots(res.data);
+      } catch (err) {
+        console.error("Failed to fetch slots:", err);
+      }
+    };
+
+    fetchSlots();
+  }, [formData.date]);
 
   useEffect(() => {
     if (experience && formData.guests > experience.maxGuests) {
@@ -67,6 +88,14 @@ const ExperienceDetail = () => {
     autoplay: true,
     autoplaySpeed: 1350,
   };
+
+  const guestExceedsSlot =
+    selectedSlotData &&
+    formData.guests >
+      selectedSlotData.maxGuests - selectedSlotData.bookedGuests;
+
+  const isFormComplete =
+    formData.date && formData.guests > 0 && selectedSlot && !guestExceedsSlot;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
@@ -208,55 +237,110 @@ const ExperienceDetail = () => {
                 </div>
               </div>
 
-              {/* Inputs */}
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Date */}
-                  <div className="relative group">
-                    <label className=" text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-emerald-600" />
-                      Date
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="date"
-                        name="date"
-                        value={formData.date}
-                        onChange={handleChange}
-                        min={new Date().toISOString().split("T")[0]}
-                        className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white hover:border-emerald-300 transition-all duration-200 text-gray-700 font-medium appearance-none"
-                        style={{
-                          colorScheme: "light",
-                          WebkitAppearance: "none",
-                        }}
-                      />
-                    </div>
-                  </div>
+              {/* Date Picker Input */}
+              <div className="relative group">
+                <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-emerald-600" />
+                  Select Date
+                </label>
+                <input
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white hover:border-emerald-300 transition-all duration-200 text-gray-700 font-medium"
+                  min={new Date().toISOString().split("T")[0]} // only future dates
+                />
+              </div>
 
-                  {/* Guests */}
-                  <div className="relative group">
-                    <label className=" text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                      <Users className="w-4 h-4 text-emerald-600" />
-                      Guests
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        name="guests"
-                        min="1"
-                        max={experience.maxGuests}
-                        value={formData.guests}
-                        onChange={handleChange}
-                        className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white hover:border-emerald-300 transition-all duration-200 text-gray-700 font-medium appearance-none"
-                        style={{
-                          WebkitAppearance: "none",
-                          MozAppearance: "textfield",
-                        }}
-                      />
-                    </div>
+              {/* Slot Selection UI */}
+              {formData.date && (
+                <div className="mt-6">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-emerald-600" />
+                    Select Time Slot
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-2">
+                    {availableSlots.map((slot, idx) => {
+                      const isFull = slot.bookedGuests >= slot.maxGuests;
+                      const availableSpots = slot.maxGuests - slot.bookedGuests;
+                      const isSelected = selectedSlot === slot.time;
+
+                      return (
+                        <button
+                          key={idx}
+                          disabled={isFull}
+                          onClick={() => {
+                            if (!isFull) {
+                              setSelectedSlot(slot.time);
+                              setSelectedSlotData(slot);
+                            }
+                          }}
+                          className={`rounded-xl py-2 px-3 text-sm font-semibold border text-center transition-all duration-200 ${
+                            isFull
+                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                              : isSelected
+                              ? "bg-emerald-600 text-white border-emerald-600 shadow-md hover:scale-105"
+                              : "bg-white text-emerald-600 border-emerald-300 hover:border-emerald-600 hover:bg-emerald-50"
+                          }`}
+                        >
+                          <div className="flex flex-col items-center">
+                            <span>{slot.time}</span>
+                            <span className="text-xs mt-1">
+                              {isFull
+                                ? "Full"
+                                : `${availableSpots} spot${
+                                    availableSpots !== 1 ? "s" : ""
+                                  }`}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
+              )}
+
+              {/* Guests Input */}
+              <div className="relative group mt-6">
+                <label className=" text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-emerald-600" />
+                  Guests
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="guests"
+                    min="1"
+                    max={
+                      selectedSlotData
+                        ? selectedSlotData.maxGuests -
+                          selectedSlotData.bookedGuests
+                        : experience.maxGuests
+                    }
+                    value={formData.guests}
+                    onChange={handleChange}
+                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white hover:border-emerald-300 transition-all duration-200 text-gray-700 font-medium appearance-none"
+                    style={{
+                      WebkitAppearance: "none",
+                      MozAppearance: "textfield",
+                    }}
+                  />
+                </div>
               </div>
+              {guestExceedsSlot && (
+                <p className="text-red-500 text-sm mt-2">
+                  Only{" "}
+                  {selectedSlotData.maxGuests - selectedSlotData.bookedGuests}{" "}
+                  guest
+                  {selectedSlotData.maxGuests -
+                    selectedSlotData.bookedGuests !==
+                  1
+                    ? "s"
+                    : ""}{" "}
+                  allowed for this slot
+                </p>
+              )}
 
               {/* Price Breakdown */}
               {isFormComplete && (
@@ -291,6 +375,43 @@ const ExperienceDetail = () => {
               )}
 
               {/* Reserve Button */}
+              {/* <button
+                // disabled={!isFormComplete}
+                disabled={
+                  !formData.date ||
+                  !selectedSlot ||
+                  formData.guests <= 0 ||
+                  guestExceedsSlot
+                }
+                onClick={() => {
+                  const bookingDetails = {
+                    type: "experience",
+                    experienceId: experience._id,
+                    experienceTitle: experience.title,
+                    date: formData.date,
+                    time: selectedSlot, // slot selection added
+                    guests: formData.guests,
+                    totalPrice: Math.round(totalPrice * 1.22),
+                  };
+
+                  if (!token) {
+                    setBookingData(bookingDetails);
+                    navigate("/login");
+                  } else {
+                    setBookingData(bookingDetails);
+                    navigate("/confirm");
+                  }
+                }}
+                className={`mt-8 w-full py-5 text-white font-bold rounded-xl transition-all duration-300 text-lg ${
+                  isFormComplete
+                    ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:scale-105 shadow-lg hover:shadow-xl"
+                    : "bg-gray-300 cursor-not-allowed"
+                }`}
+              >
+                {isFormComplete
+                  ? "Reserve This Experience"
+                  : "Fill all fields to reserve"}
+              </button> */}
               <button
                 disabled={!isFormComplete}
                 onClick={() => {
@@ -299,10 +420,12 @@ const ExperienceDetail = () => {
                     experienceId: experience._id,
                     experienceTitle: experience.title,
                     date: formData.date,
+                    time: selectedSlot,
                     guests: formData.guests,
                     pricePerPerson: experience.pricePerHead,
                     totalPrice: Math.round(totalPrice * 1.22),
                   };
+                  console.log(bookingDetails, "bookingg..");
 
                   if (!token) {
                     setBookingData(bookingDetails);

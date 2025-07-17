@@ -7,10 +7,8 @@ import Experience from "../models/experience.js";
 import Service from "../models/service.js";
 
 import { uploadToCloudinary } from "../utils/cloudinary.js";
-
-
+import { releaseHotelRooms } from "../utils/bookingCancel.js";
 import { userCancelBooking } from "../utils/sendEmail.js";
-
 
 //cancel booking controller...
 export const cancelBookingByUser = async (req, res) => {
@@ -70,6 +68,41 @@ export const cancelBookingByUser = async (req, res) => {
       });
     }
 
+    // Release hotel availability
+    if (booking.type === "hotel") {
+      await releaseHotelRooms(
+        booking.referenceId,
+        booking.checkIn,
+        booking.checkOut,
+        booking.rooms
+      );
+    }
+
+    // ✅ Release service or experience slot availability
+    if (booking.type === "service" || booking.type === "experience") {
+      const { date, slotBooking, guests } = booking;
+
+      const slotKey = slotBooking?.startTime;
+      if (slotKey && date) {
+        const availabilityIndex = item.availability.findIndex(
+          (entry) =>
+            entry.date === date &&
+            entry.slot.startTime === slotBooking.startTime &&
+            entry.slot.endTime === slotBooking.endTime
+        );
+
+        if (availabilityIndex !== -1) {
+          item.availability[availabilityIndex].bookedGuests -= guests;
+
+          if (item.availability[availabilityIndex].bookedGuests < 0) {
+            item.availability[availabilityIndex].bookedGuests = 0;
+          }
+
+          await item.save();
+        }
+      }
+    }
+
     // Send email to host
     await userCancelBooking(host.email, {
       hostUsername: host.username,
@@ -125,7 +158,9 @@ export const createReview = async (req, res) => {
       type,
     });
     if (alreadyReviewed) {
-      return res.status(400).json({ message: "You already reviewed this item." });
+      return res
+        .status(400)
+        .json({ message: "You already reviewed this item." });
     }
 
     // Create review
@@ -160,7 +195,6 @@ export const createReview = async (req, res) => {
   }
 };
 
-
 //user profile h yeh...
 export const getUserProfile = async (req, res) => {
   try {
@@ -177,11 +211,13 @@ export const getUserProfile = async (req, res) => {
       createdAt: user.createdAt,
     });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch profile', error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch profile", error: err.message });
   }
 };
 
-//profile update 
+//profile update
 export const updateUserProfile = async (req, res) => {
   try {
     const user = req.user;
@@ -192,7 +228,10 @@ export const updateUserProfile = async (req, res) => {
     // ✅ Step 1: Try uploading new profile image if provided
     if (req.file) {
       try {
-        const uploadResult = await uploadToCloudinary(req.file.path, "profiles");
+        const uploadResult = await uploadToCloudinary(
+          req.file.path,
+          "profiles"
+        );
         imageUrl = uploadResult.secure_url;
       } catch (uploadErr) {
         console.error("Cloudinary upload failed:", uploadErr);
@@ -234,8 +273,6 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
-
-
 //HOST PROFILE AND UPDATE...
 export const getHostProfile = async (req, res) => {
   try {
@@ -252,7 +289,9 @@ export const getHostProfile = async (req, res) => {
     res.status(200).json({ user });
   } catch (err) {
     console.error("GET HOST PROFILE ERROR:", err);
-    res.status(500).json({ message: "Failed to fetch profile", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch profile", error: err.message });
   }
 };
 

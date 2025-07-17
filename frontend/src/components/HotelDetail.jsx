@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -37,8 +36,18 @@ const HotelDetail = () => {
     guests: params.get("guests") || 1,
   });
 
+  const hasEnoughRooms = hotel?.availableRooms >= formData.rooms;
+  const isFullyBooked = hotel?.availableRooms === 0;
+
   const isFormComplete =
     formData.checkIn && formData.checkOut && formData.rooms && formData.guests;
+
+  // ✅ Check if check-in is before check-out
+  const isValidDateRange =
+    new Date(formData.checkIn) < new Date(formData.checkOut);
+
+  // ✅ Final flag to control Reserve button
+  const isBookingAllowed = isFormComplete && isValidDateRange;
 
   // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split("T")[0];
@@ -64,6 +73,27 @@ const HotelDetail = () => {
     };
     fetchHotel();
   }, [id]);
+
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      if (!formData.checkIn || !formData.checkOut) return;
+
+      try {
+        const res = await axios.get(
+          `http://localhost:4000/api/host/${id}/availability`,
+          { params: { checkIn: formData.checkIn, checkOut: formData.checkOut } }
+        );
+        setHotel((prev) => ({
+          ...prev,
+          availableRooms: res.data.availableRooms,
+        }));
+      } catch (err) {
+        console.error("Failed to fetch availability:", err);
+      }
+    };
+
+    fetchAvailability();
+  }, [formData.checkIn, formData.checkOut]);
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -155,13 +185,13 @@ const HotelDetail = () => {
     ...additionalAmenities,
   ];
 
-  const standardAmenities = [
-    "Free WiFi",
-    "Swimming Pool",
-    "Restaurant",
-    "Parking",
-    "Room Service",
-  ];
+  // const standardAmenities = [
+  //   "Free WiFi",
+  //   "Swimming Pool",
+  //   "Restaurant",
+  //   "Parking",
+  //   "Room Service",
+  // ];
 
   if (!hotel)
     return (
@@ -331,119 +361,226 @@ const HotelDetail = () => {
           </div>
 
           {/* Booking Box */}
-          <div className="w-full lg:w-[450px] ">
-            <div className="bg-white/95 backdrop-blur-lg border border-white/30 rounded-2xl p-8 shadow-2xl sticky top-60">
-              <div className="text-center mb-8">
-                <div className="text-4xl font-bold bg-gradient-to-r from-emerald-700 to-teal-600 bg-clip-text text-transparent">
-                  ₹{hotel.pricePerNight.toLocaleString()}
-                  <span className="text-lg font-medium text-gray-500 ml-2">
-                    / night
-                  </span>
+          <div className="w-full lg:w-[450px]">
+            <div className="sticky top-24">
+              <div className="bg-white/95 backdrop-blur-lg border border-white/30 rounded-2xl shadow-2xl p-6 sm:p-8 transition-all duration-300">
+                <div className="bg-gradient-to-r from-emerald-700 to-teal-600 text-white p-6 rounded-xl mb-4">
+                  <div className="text-center">
+                    <div className="text-4xl font-bold mb-2">
+                      ₹{hotel.pricePerNight.toLocaleString()}
+                      <span className="text-lg font-medium text-white/80 ml-2">
+                        / night
+                      </span>
+                    </div>
+                    <p className="text-emerald-100">Best price guaranteed</p>
+                  </div>
                 </div>
-                <p className="text-gray-600 mt-2">Best price guaranteed</p>
-              </div>
 
-              {/* Date & Guest Inputs */}
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  {["rooms", "guests"].map((field, idx) => (
-                    <div key={idx} className="relative group">
+                <div className="space-y-6">
+                  {/* Date Inputs */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Check-in */}
+                    <div className="relative group">
+                      <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-emerald-600" />
+                        Check-in
+                      </label>
+                      <input
+                        type="date"
+                        name="checkIn"
+                        value={formData.checkIn}
+                        onChange={handleChange}
+                        min={new Date().toISOString().split("T")[0]}
+                        className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white hover:border-emerald-300 transition-all duration-200 text-gray-700 font-medium"
+                      />
+                    </div>
+
+                    {/* Check-out */}
+                    <div className="relative group">
+                      <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-emerald-600" />
+                        Check-out
+                      </label>
+                      <input
+                        type="date"
+                        name="checkOut"
+                        value={formData.checkOut}
+                        onChange={handleChange}
+                        min={
+                          formData.checkIn ||
+                          new Date().toISOString().split("T")[0]
+                        }
+                        className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white hover:border-emerald-300 transition-all duration-200 text-gray-700 font-medium"
+                      />
+                    </div>
+                  </div>
+                  {formData.checkIn &&
+                    formData.checkOut &&
+                    !isValidDateRange && (
+                      <p className="text-red-500 text-sm font-medium mt-1">
+                        Check-out must be after check-in date.
+                      </p>
+                    )}
+
+                  {/* Room and Guests */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        {field.charAt(0).toUpperCase() + field.slice(1)}
+                        Rooms
+                      </label>
+                      <input
+                        type="number"
+                        name="rooms"
+                        min="1"
+                        value={formData.rooms}
+                        onChange={handleChange}
+                        className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white hover:border-emerald-300 transition-all duration-200 text-gray-700 font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Guests
                       </label>
                       <div className="relative">
-                        {field === "guests" && (
-                          <Users className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-emerald-600 pointer-events-none" />
-                        )}
+                        <Users className="absolute left-3 top-4 w-5 h-5 text-emerald-600" />
                         <input
                           type="number"
-                          name={field}
+                          name="guests"
                           min="1"
-                          value={formData[field]}
+                          value={formData.guests}
                           onChange={handleChange}
-                          className={`w-full ${
-                            field === "guests" ? "pl-12" : "px-4"
-                          } pr-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white hover:border-emerald-300 transition-all duration-200 text-gray-700 font-medium`}
+                          className="w-full pl-10 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white hover:border-emerald-300 transition-all duration-200 text-gray-700 font-medium"
                         />
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Pricing Summary */}
-              {isFormComplete && calculateNights() > 0 && (
-                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-6 space-y-3 mt-8 text-sm border border-emerald-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">
-                      ₹{hotel.pricePerNight} × {calculateNights()} nights ×{" "}
-                      {formData.rooms} rooms
-                    </span>
-                    <span className="font-semibold text-gray-800">
-                      ₹{totalPrice.toLocaleString()}
-                    </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Service Fee</span>
-                    <span className="font-semibold text-gray-800">
-                      ₹{Math.round(totalPrice * 0.1).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Taxes</span>
-                    <span className="font-semibold text-gray-800">
-                      ₹{Math.round(totalPrice * 0.12).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="border-t-2 border-emerald-200 pt-4 font-bold text-xl flex justify-between items-center">
-                    <span className="text-emerald-700">Total</span>
-                    <span className="text-emerald-700">
-                      ₹{Math.round(totalPrice * 1.22).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="bg-blue-50 rounded-lg p-3 mt-4 border border-blue-200">
-                    <p className="text-xs text-blue-700 font-medium">
-                      <strong>Note:</strong> Maximum 2 guests are allowed per
-                      room. Rooms are auto-adjusted accordingly.
+                  {/* Room availability warning */}
+                  {!isFullyBooked && !hasEnoughRooms && (
+                    <p className="text-red-600 text-sm font-semibold text-center">
+                      Only {hotel.availableRooms} rooms available for selected
+                      dates.
                     </p>
+                  )}
+
+                  {/* Price Details */}
+                  {isFormComplete && calculateNights() > 0 && (
+                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-6 space-y-4 border border-emerald-200 mt-6 text-sm">
+                      <h3 className="font-semibold text-gray-900 mb-2">
+                        Price Details
+                      </h3>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>
+                            ₹{hotel.pricePerNight.toLocaleString()} ×{" "}
+                            {calculateNights()} nights × {formData.rooms} rooms
+                          </span>
+                          <span className="font-medium">
+                            ₹{totalPrice.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-gray-600">
+                          <span>Service Fee</span>
+                          <span>
+                            ₹{Math.round(totalPrice * 0.1).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-gray-600">
+                          <span>Taxes</span>
+                          <span>
+                            ₹{Math.round(totalPrice * 0.12).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="border-t pt-3 font-bold text-lg flex justify-between text-emerald-700">
+                          <span>Total</span>
+                          <span>
+                            ₹{Math.round(totalPrice * 1.22).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Reserve Button
+                  <button
+                    disabled={!isBookingAllowed || !hasEnoughRooms}
+                    onClick={() => {
+                      if (!isFormComplete) return;
+                      const bookingDetails = {
+                        hotelId: hotel._id,
+                        hotelTitle: hotel.title,
+                        checkIn: formData.checkIn,
+                        checkOut: formData.checkOut,
+                        rooms: formData.rooms,
+                        guests: formData.guests,
+                        totalPrice: Math.round(totalPrice * 1.22),
+                      };
+
+                      if (!token) {
+                        setBookingData(bookingDetails);
+                        navigate("/login");
+                      } else {
+                        setBookingData(bookingDetails);
+                        navigate("/confirm");
+                      }
+                    }}
+                    className={`mt-8 w-full py-5 text-white font-bold rounded-xl transition-all duration-300 text-lg ${
+                      isFormComplete
+                        ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:scale-105 shadow-lg hover:shadow-xl"
+                        : "bg-gray-300 cursor-not-allowed"
+                    }`}
+                  >
+                    {isBookingAllowed
+                      ? "Reserve Now"
+                      : !isFormComplete
+                      ? "Fill all fields to reserve"
+                      : "Invalid date range"}
+                  </button> */}
+
+                  <button
+                    disabled={!isBookingAllowed || !hasEnoughRooms}
+                    onClick={() => {
+                      if (!isFormComplete || !hasEnoughRooms) return;
+
+                      const bookingDetails = {
+                        hotelId: hotel._id,
+                        hotelTitle: hotel.title,
+                        checkIn: formData.checkIn,
+                        checkOut: formData.checkOut,
+                        rooms: formData.rooms,
+                        guests: formData.guests,
+                        totalPrice: Math.round(totalPrice * 1.22),
+                      };
+
+                      if (!token) {
+                        setBookingData(bookingDetails);
+                        navigate("/login");
+                      } else {
+                        setBookingData(bookingDetails);
+                        navigate("/confirm");
+                      }
+                    }}
+                    className={`mt-8 w-full py-5 text-white font-bold rounded-xl transition-all duration-300 text-lg ${
+                      isFormComplete && hasEnoughRooms && isValidDateRange
+                        ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:scale-105 shadow-lg hover:shadow-xl"
+                        : "bg-gray-300 cursor-not-allowed"
+                    }`}
+                  >
+                    {!isFormComplete
+                      ? "Fill all fields to reserve"
+                      : !isValidDateRange
+                      ? "Invalid date range"
+                      : !hasEnoughRooms
+                      ? `Only ${hotel.availableRooms} rooms available`
+                      : "Reserve Now"}
+                  </button>
+
+                  {/* Security Note */}
+                  <div className="flex justify-center items-center gap-3 text-sm text-gray-600 mt-6 bg-gray-50 rounded-lg p-3">
+                    <Shield className="w-5 h-5 text-emerald-600" />
+                    <span>Your data is secure and encrypted</span>
                   </div>
                 </div>
-              )}
-
-              {/* Reserve Button */}
-              <button
-                disabled={!isFormComplete}
-                onClick={() => {
-                  const bookingDetails = {
-                    hotelId: hotel._id,
-                    hotelTitle: hotel.title,
-                    checkIn: formData.checkIn,
-                    checkOut: formData.checkOut,
-                    rooms: formData.rooms,
-                    guests: formData.guests,
-                    totalPrice: Math.round(totalPrice * 1.22),
-                  };
-
-                  if (!token) {
-                    setBookingData(bookingDetails);
-                    navigate("/login");
-                  } else {
-                    setBookingData(bookingDetails);
-                    navigate("/confirm");
-                  }
-                }}
-                className={`mt-8 w-full py-5 text-white font-bold rounded-xl transition-all duration-300 text-lg ${
-                  isFormComplete
-                    ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:scale-105 shadow-lg hover:shadow-xl"
-                    : "bg-gray-300 cursor-not-allowed"
-                }`}
-              >
-                {isFormComplete ? "Reserve Now" : "Fill all fields to reserve"}
-              </button>
-
-              <div className="flex justify-center items-center gap-3 text-sm text-gray-600 mt-6 bg-gray-50 rounded-lg p-3">
-                <Shield className="w-5 h-5 text-emerald-600" />
-                <span>Your data is secure and encrypted</span>
               </div>
             </div>
           </div>
