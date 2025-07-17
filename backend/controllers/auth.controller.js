@@ -26,48 +26,45 @@ export const registerUser = async (req, res) => {
     documentTypes,
   } = req.body;
 
-  console.log("👉 Incoming body:", req.body);
-  console.log("👉 Incoming files:", req.files);
 
   const profileFile = req.files?.profileImage?.[0];
   let profileImage = "";
 
   try {
-    console.log("🔍 Checking if user already exists...");
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      console.log("❌ User already exists");
+
       return res.status(400).json({ message: "User already exists" });
     }
 
-    console.log("🧹 Deleting any previous TempUser...");
+
     await TempUser.deleteMany({ email });
 
-    console.log("🔐 Generating OTP & hashing password...");
+    
     const otp = generateOTP();
     const hashedPassword = await bcrypt.hash(password, 10);
 
     if (profileFile) {
-      console.log("🖼️ Uploading profile image to Cloudinary...");
+
       const cloudRes = await uploadToCloudinary(profileFile.path, "profiles");
       profileImage = cloudRes.secure_url;
-      console.log("✅ Profile uploaded:", profileImage);
+      
     }
 
     const uploadedDocs = [];
     const docFiles = req.files?.documents || [];
 
     if (role === "host" && docFiles.length === 0) {
-      console.log("❌ Host registration without KYC docs");
+
       return res
         .status(400)
         .json({ message: "KYC documents are required for host" });
     }
 
-    console.log("📄 Uploading KYC documents...");
+
     for (let i = 0; i < docFiles.length; i++) {
       const file = docFiles[i];
-      console.log(`📤 Uploading doc ${i + 1}:`, file.originalname);
 
       const cloudRes = await uploadToCloudinary(file.path, "kyc");
 
@@ -76,7 +73,7 @@ export const registerUser = async (req, res) => {
         : documentTypes;
 
       if (!docType) {
-        console.log("❌ Missing docType for document", i + 1);
+   
         return res.status(400).json({
           message: `Missing document type for document ${i + 1}`,
         });
@@ -88,10 +85,10 @@ export const registerUser = async (req, res) => {
         status: "pending",
         rejectionReason: "",
       });
-      console.log(`✅ Uploaded ${docType}:`, cloudRes.secure_url);
+
     }
 
-    console.log("💾 Creating TempUser in DB...");
+
     await TempUser.create({
       username,
       email,
@@ -111,13 +108,13 @@ export const registerUser = async (req, res) => {
       kycDocuments: role === "host" ? uploadedDocs : [],
     });
 
-    console.log("✉️ Sending OTP to email...");
+
     await sendEmail(email, otp);
 
-    console.log("✅ Registration success — OTP sent");
+    
     res.status(200).json({ message: "OTP sent to email" });
   } catch (err) {
-    console.error("❌ Registration Error:", err);
+   
     res.status(500).json({
       message: "Failed to register user",
       error: err.message || "Unknown error",

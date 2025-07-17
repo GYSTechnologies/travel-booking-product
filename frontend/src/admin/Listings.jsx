@@ -16,26 +16,61 @@ import Loader from "../common/Loader";
 import AddListingModal from "../admin/AddHotelModal";
 
 // 🔁 Dynamic API URL generator
-const getApiConfig = (type) => {
+// const getApiConfig = (type) => {
+//   switch (type) {
+//     case "hotel":
+//       return {
+//         fetchUrl: "http://localhost:4000/api/host/hotels",
+//         deleteUrl: (id) => `http://localhost:4000/api/host/hotel-delete/${id}`,
+//         dataKey: "hotels",
+//       };
+//     case "services":
+//       return {
+//         fetchUrl: "http://localhost:4000/api/services/service-listing",
+//         deleteUrl: (id) => `http://localhost:4000/api/services/delete/${id}`,
+//         dataKey: "services",
+//       };
+//     case "experiences":
+//       return {
+//         fetchUrl: "http://localhost:4000/api/experiences/experiences-listing",
+//         deleteUrl: (id) => `http://localhost:4000/api/experiences/delete/${id}`,
+//         dataKey: "experiences",
+//       };
+//     default:
+//       return {
+//         fetchUrl: "",
+//         deleteUrl: () => "",
+//         dataKey: "listings",
+//       };
+//   }
+// };
+
+// 🔁 Dynamic fetch/delete URL and dataKey generator based on listing type
+ const getApiConfig = (type) => {
+  const base = "http://localhost:4000/api";
+
   switch (type) {
     case "hotel":
       return {
-        fetchUrl: "http://localhost:4000/api/host/hotels",
-        deleteUrl: (id) => `http://localhost:4000/api/host/hotel-delete/${id}`,
+        fetchUrl: `${base}/host/hotels`,
+        deleteUrl: (id) => `${base}/host/hotel-delete/${id}`,
         dataKey: "hotels",
       };
+
     case "services":
       return {
-        fetchUrl: "http://localhost:4000/api/services/service-listing",
-        deleteUrl: (id) => `http://localhost:4000/api/services/delete/${id}`,
+        fetchUrl: `${base}/services/service-listing`,
+        deleteUrl: (id) => `${base}/services/delete/${id}`,
         dataKey: "services",
       };
+
     case "experiences":
       return {
-        fetchUrl: "http://localhost:4000/api/experiences/experiences-listing",
-        deleteUrl: (id) => `http://localhost:4000/api/experiences/delete/${id}`,
+        fetchUrl: `${base}/experiences/experiences-listing`,
+        deleteUrl: (id) => `${base}/experiences/delete/${id}`,
         dataKey: "experiences",
       };
+
     default:
       return {
         fetchUrl: "",
@@ -44,6 +79,7 @@ const getApiConfig = (type) => {
       };
   }
 };
+
 
 const Listings = () => {
   const { token, user } = useAuth();

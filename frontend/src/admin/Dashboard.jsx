@@ -18,18 +18,34 @@ const Dashboard = () => {
     : user?.hostType || "hotel";
 
   // ✅ Dynamic API based on hostType
-  const getDashboardStatsUrl = (hostType) => {
-    switch (hostType) {
-      case "hotel":
-        return "http://localhost:4000/api/host/dashboard/stats";
-      case "services":
-        return "http://localhost:4000/api/services/dashboard/stats";
-      case "experiences":
-        return "http://localhost:4000/api/experiences/dashboard/stats";
-      default:
-        return "";
-    }
-  };
+  // const getDashboardStatsUrl = (hostType) => {
+  //   switch (hostType) {
+  //     case "hotel":
+  //       return "http://localhost:4000/api/host/dashboard/stats";
+  //     case "services":
+  //       return "http://localhost:4000/api/services/dashboard/stats";
+  //     case "experiences":
+  //       return "http://localhost:4000/api/experiences/dashboard/stats";
+  //     default:
+  //       return "";
+  //   }
+  // };
+  // Get dashboard stats URL based on host type
+ const getDashboardStatsUrl = (hostType) => {
+  const base = "http://localhost:4000/api";
+
+  switch (hostType) {
+    case "hotel":
+      return `${base}/host/dashboard/stats`;
+    case "services":
+      return `${base}/services/dashboard/stats`;
+    case "experiences":
+      return `${base}/experiences/dashboard/stats`;
+    default:
+      return "";
+  }
+};
+
 
   const getTypeIcon = () => {
     switch (hostType) {

@@ -2,7 +2,13 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
+
 import { Mail, Lock, Building, Eye, EyeOff, ArrowRight } from "lucide-react";
+import {
+  loginUser,
+  getSubscriptionStatus,
+} from "../api/allAPIs";
+
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -23,63 +29,99 @@ const LoginPage = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setError("");
+  //   setIsLoading(true);
+
+  //   try {
+  //     const res = await axios.post(
+  //       "http://localhost:4000/api/auth/login",
+  //       formData,
+  //       {
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //       }
+  //     );
+
+  //     const { user, token } = res.data;
+
+  //     login(user, token);
+
+  //     if (isHostLogin && user.role === "host") {
+  //       const subRes = await axios.get(
+  //         "http://localhost:4000/api/subscription/status",
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //           },
+  //         }
+  //       );
+
+  //       const { isActive } = subRes.data;
+
+  //       if (!isActive) {
+  //         // 🛑 Not subscribed yet
+  //         navigate("/host/subscription");
+  //       } else if (!user.isHostApproved) {
+  //         // 🟡 Subscribed but still waiting for approval
+  //         navigate("/waiting-approval");
+  //       } else {
+  //         // ✅ Subscribed + Approved
+  //         navigate("/host/dashboard");
+  //       }
+  //     } else if (!isHostLogin && user.role === "user") {
+  //       bookingData ? navigate("/confirm") : navigate("/");
+  //     } else {
+  //       setError(
+  //         isHostLogin
+  //           ? "This account is not registered as a host."
+  //           : "This account is not a user account."
+  //       );
+  //     }
+  //   } catch (err) {
+  //     setError(err.response?.data?.message || "Login failed. Try again later.");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+  e.preventDefault();
+  setError("");
+  setIsLoading(true);
 
-    try {
-      const res = await axios.post(
-        "http://localhost:4000/api/auth/login",
-        formData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+  try {
+    const { user, token } = await loginUser(formData);
+    login(user, token);
 
-      const { user, token } = res.data;
+    if (isHostLogin && user.role === "host") {
+      const { isActive } = await getSubscriptionStatus(token);
 
-      login(user, token);
-
-      if (isHostLogin && user.role === "host") {
-        const subRes = await axios.get(
-          "http://localhost:4000/api/subscription/status",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const { isActive } = subRes.data;
-
-        if (!isActive) {
-          // 🛑 Not subscribed yet
-          navigate("/host/subscription");
-        } else if (!user.isHostApproved) {
-          // 🟡 Subscribed but still waiting for approval
-          navigate("/waiting-approval");
-        } else {
-          // ✅ Subscribed + Approved
-          navigate("/host/dashboard");
-        }
-      } else if (!isHostLogin && user.role === "user") {
-        bookingData ? navigate("/confirm") : navigate("/");
+      if (!isActive) {
+        navigate("/host/subscription");
+      } else if (!user.isHostApproved) {
+        navigate("/waiting-approval");
       } else {
-        setError(
-          isHostLogin
-            ? "This account is not registered as a host."
-            : "This account is not a user account."
-        );
+        navigate("/host/dashboard");
       }
-    } catch (err) {
-      setError(err.response?.data?.message || "Login failed. Try again later.");
-    } finally {
-      setIsLoading(false);
+    } else if (!isHostLogin && user.role === "user") {
+      bookingData ? navigate("/confirm") : navigate("/");
+    } else {
+      setError(
+        isHostLogin
+          ? "This account is not registered as a host."
+          : "This account is not a user account."
+      );
     }
-  };
+  } catch (err) {
+    setError(err.response?.data?.message || "Login failed. Try again later.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div className="h-[90vh] bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center px-4 py-8">

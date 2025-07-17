@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 import SearchResult from "../components/SearchResult"; // We'll reuse this
+import { fetchAllServicesData, searchServices } from "../api/allAPIs";
 
 export default function ServicesPage() {
   const [groupedServices, setGroupedServices] = useState({});
@@ -14,42 +15,73 @@ export default function ServicesPage() {
   });
 
   // ✅ Fetch all services and group by category
+  // useEffect(() => {
+  //   const fetchAllServices = async () => {
+  //     try {
+  //       const res = await axios.get("http://localhost:4000/api/services/all-services", {
+  //         params: { place: "all" },
+  //       });
+
+  //       const grouped = res.data.reduce((acc, service) => {
+  //         if (!acc[service.category]) acc[service.category] = [];
+  //         acc[service.category].push(service);
+  //         return acc;
+  //       }, {});
+
+  //       setGroupedServices(grouped);
+  //     } catch (err) {
+  //       console.error("Failed to load services:", err);
+  //     }
+  //   };
+
+  //   fetchAllServices();
+  // }, []);
+
   useEffect(() => {
-    const fetchAllServices = async () => {
-      try {
-        const res = await axios.get("http://localhost:4000/api/services/all-services", {
-          params: { place: "all" },
-        });
-
-        const grouped = res.data.reduce((acc, service) => {
-          if (!acc[service.category]) acc[service.category] = [];
-          acc[service.category].push(service);
-          return acc;
-        }, {});
-
-        setGroupedServices(grouped);
-      } catch (err) {
-        console.error("Failed to load services:", err);
-      }
-    };
-
-    fetchAllServices();
-  }, []);
-
-  // ✅ Handle search
-  const handleSearch = async () => {
-    const { location, date, type } = searchData;
-    if (!location) return alert("Please enter a location");
-
+  const fetchData = async () => {
     try {
-      const res = await axios.get("http://localhost:4000/api/services/all-services", {
-        params: { place: location, date, type },
-      });
-      setSearchResults(res.data);
+      const data = await fetchAllServicesData();
+      const grouped = data.reduce((acc, service) => {
+        if (!acc[service.category]) acc[service.category] = [];
+        acc[service.category].push(service);
+        return acc;
+      }, {});
+      setGroupedServices(grouped);
     } catch (err) {
-      console.error("Search error:", err);
+      console.error("Failed to load services:", err);
     }
   };
+  fetchData();
+}, []);
+
+
+  // ✅ Handle search
+  // const handleSearch = async () => {
+  //   const { location, date, type } = searchData;
+  //   if (!location) return alert("Please enter a location");
+
+  //   try {
+  //     const res = await axios.get("http://localhost:4000/api/services/all-services", {
+  //       params: { place: location, date, type },
+  //     });
+  //     setSearchResults(res.data);
+  //   } catch (err) {
+  //     console.error("Search error:", err);
+  //   }
+  // };
+
+  const handleSearch = async () => {
+  const { location, date, type } = searchData;
+  if (!location) return alert("Please enter a location");
+
+  try {
+    const results = await searchServices(location, date, type);
+    setSearchResults(results);
+  } catch (err) {
+    console.error("Search error:", err);
+  }
+};
+
 
   return (
     <>

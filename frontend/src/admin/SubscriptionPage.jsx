@@ -3,6 +3,13 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import {
+  checkSubscriptionStatus,
+  startTrialAPI,
+  createSubscriptionOrder,
+  verifySubscriptionPayment,
+} from "../api/allAPIs";
+
 
 const SubscriptionPage = () => {
   const [isTrialUsed, setIsTrialUsed] = useState(false);
@@ -16,132 +23,224 @@ const SubscriptionPage = () => {
     { name: "12 Months", key: "1year", price: 1999 },
   ];
 
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const res = await axios.get(
-          "http://localhost:4000/api/subscription/status",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+  // useEffect(() => {
+  //   const checkStatus = async () => {
+  //     try {
+  //       const res = await axios.get(
+  //         "http://localhost:4000/api/subscription/status",
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //           },
+  //         }
+  //       );
 
-        if (res.data?.hasUsedTrial) setIsTrialUsed(true);
+  //       if (res.data?.hasUsedTrial) setIsTrialUsed(true);
 
-        if (res.data?.isActive) {
-          // Instead of fetchUserAndNavigate, use existing user context
+  //       if (res.data?.isActive) {
+  //         // Instead of fetchUserAndNavigate, use existing user context
+  //         if (user?.role === "host") {
+  //           if (user?.isHostApproved) {
+  //             navigate("/host/dashboard");
+  //           } else {
+  //             navigate("/waiting-approval");
+  //           }
+  //         } else {
+  //           navigate("/");
+  //         }
+  //       }
+  //     } catch (err) {
+  //       toast.error("Failed to check subscription status");
+  //       navigate("/waiting-approval");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   checkStatus();
+  // }, [navigate, token, user]);
+
+  // const startTrial = async () => {
+  //   try {
+  //     await axios.post(
+  //       "http://localhost:4000/api/subscription/start-trial",
+  //       {},
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
+
+  //     toast.success("Trial started!");
+
+  //     // Use current user context instead of API call
+  //     if (user?.role === "host") {
+  //       if (user?.isHostApproved) {
+  //         navigate("/host/dashboard");
+  //       } else {
+  //         navigate("/waiting-approval");
+  //       }
+  //     } else {
+  //       navigate("/");
+  //     }
+  //   } catch (err) {
+  //     toast.error(err.response?.data?.message || "Trial failed");
+  //   }
+  // };
+
+  // const handlePay = async (planKey, price) => {
+  //   try {
+  //     const { data } = await axios.post(
+  //       "http://localhost:4000/api/payment/sub-payment/order",
+  //       { plan: planKey },
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
+
+  //     const options = {
+  //       key: "rzp_test_BfK6i6b0E5R9rg",
+  //       amount: data.amount,
+  //       currency: data.currency,
+  //       order_id: data.id,
+  //       name: "Host Subscription",
+  //       description: `Subscription for ${planKey}`,
+  //       handler: async function (response) {
+  //         try {
+  //           await axios.post(
+  //             "http://localhost:4000/api/payment/verify-subscription",
+  //             {
+  //               plan: planKey,
+  //               razorpay_order_id: response.razorpay_order_id,
+  //               razorpay_payment_id: response.razorpay_payment_id,
+  //               razorpay_signature: response.razorpay_signature,
+  //               email: user.email,
+  //             },
+  //             {
+  //               headers: {
+  //                 Authorization: `Bearer ${token}`,
+  //               },
+  //             }
+  //           );
+  //           toast.success("Subscription activated!");
+
+  //           // Use existing user state instead of API call
+  //           if (user?.role === "host") {
+  //             if (user?.isHostApproved) {
+  //               navigate("/host/dashboard");
+  //             } else {
+  //               navigate("/waiting-approval");
+  //             }
+  //           } else {
+  //             navigate("/");
+  //           }
+  //         } catch (error) {
+  //           toast.error("Payment verification failed");
+  //         }
+  //       },
+  //       theme: { color: "#10b981" },
+  //     };
+
+  //     const rzp = new window.Razorpay(options);
+  //     rzp.open();
+  //   } catch (err) {
+  //     toast.error("Failed to initiate payment");
+  //   }
+  // };
+
+
+// 1. Check subscription
+useEffect(() => {
+  const checkStatus = async () => {
+    try {
+      const data = await checkSubscriptionStatus(token);
+
+      if (data?.hasUsedTrial) setIsTrialUsed(true);
+
+      if (data?.isActive) {
+        if (user?.role === "host") {
+          user?.isHostApproved
+            ? navigate("/host/dashboard")
+            : navigate("/waiting-approval");
+        } else {
+          navigate("/");
+        }
+      }
+    } catch (err) {
+      toast.error("Failed to check subscription status");
+      navigate("/waiting-approval");
+    } finally {
+      setLoading(false);
+    }
+  };
+  checkStatus();
+}, [navigate, token, user]);
+
+// 2. Start Trial
+const startTrial = async () => {
+  try {
+    await startTrialAPI(token);
+    toast.success("Trial started!");
+
+    if (user?.role === "host") {
+      user?.isHostApproved
+        ? navigate("/host/dashboard")
+        : navigate("/waiting-approval");
+    } else {
+      navigate("/");
+    }
+  } catch (err) {
+    toast.error(err.response?.data?.message || "Trial failed");
+  }
+};
+
+// 3. Handle Pay
+const handlePay = async (planKey) => {
+  try {
+    const order = await createSubscriptionOrder(token, planKey);
+
+    const options = {
+      key: "rzp_test_BfK6i6b0E5R9rg",
+      amount: order.amount,
+      currency: order.currency,
+      order_id: order.id,
+      name: "Host Subscription",
+      description: `Subscription for ${planKey}`,
+      handler: async function (response) {
+        try {
+          await verifySubscriptionPayment(token, {
+            plan: planKey,
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            email: user.email,
+          });
+
+          toast.success("Subscription activated!");
+
           if (user?.role === "host") {
-            if (user?.isHostApproved) {
-              navigate("/host/dashboard");
-            } else {
-              navigate("/waiting-approval");
-            }
+            user?.isHostApproved
+              ? navigate("/host/dashboard")
+              : navigate("/waiting-approval");
           } else {
             navigate("/");
           }
+        } catch (error) {
+          toast.error("Payment verification failed");
         }
-      } catch (err) {
-        toast.error("Failed to check subscription status");
-        navigate("/waiting-approval");
-      } finally {
-        setLoading(false);
-      }
+      },
+      theme: { color: "#10b981" },
     };
-    checkStatus();
-  }, [navigate, token, user]);
 
-  const startTrial = async () => {
-    try {
-      await axios.post(
-        "http://localhost:4000/api/subscription/start-trial",
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  } catch (err) {
+    toast.error("Failed to initiate payment");
+  }
+};
 
-      toast.success("Trial started!");
-
-      // Use current user context instead of API call
-      if (user?.role === "host") {
-        if (user?.isHostApproved) {
-          navigate("/host/dashboard");
-        } else {
-          navigate("/waiting-approval");
-        }
-      } else {
-        navigate("/");
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Trial failed");
-    }
-  };
-
-  const handlePay = async (planKey, price) => {
-    try {
-      const { data } = await axios.post(
-        "http://localhost:4000/api/payment/sub-payment/order",
-        { plan: planKey },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const options = {
-        key: "rzp_test_BfK6i6b0E5R9rg",
-        amount: data.amount,
-        currency: data.currency,
-        order_id: data.id,
-        name: "Host Subscription",
-        description: `Subscription for ${planKey}`,
-        handler: async function (response) {
-          try {
-            await axios.post(
-              "http://localhost:4000/api/payment/verify-subscription",
-              {
-                plan: planKey,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                email: user.email,
-              },
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }
-            );
-            toast.success("Subscription activated!");
-
-            // Use existing user state instead of API call
-            if (user?.role === "host") {
-              if (user?.isHostApproved) {
-                navigate("/host/dashboard");
-              } else {
-                navigate("/waiting-approval");
-              }
-            } else {
-              navigate("/");
-            }
-          } catch (error) {
-            toast.error("Payment verification failed");
-          }
-        },
-        theme: { color: "#10b981" },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (err) {
-      toast.error("Failed to initiate payment");
-    }
-  };
 
   if (loading)
     return (

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
 import { ShieldCheck, Loader2, ArrowLeft } from "lucide-react";
+import { verifyOtp, getSubscriptionStatus } from "../api/allAPIs";
 
 const VerifyOtpPage = () => {
   const navigate = useNavigate();
@@ -55,6 +56,78 @@ const VerifyOtpPage = () => {
     inputRefs.current[next === -1 ? 5 : next]?.focus();
   };
 
+  // const handleVerify = async (e) => {
+  //   e.preventDefault();
+  //   setError("");
+
+  //   const otpString = otp.join("");
+  //   if (otpString.length !== 6) {
+  //     setError("Please enter all 6 digits");
+  //     return;
+  //   }
+
+  //   setIsLoading(true);
+  //   try {
+  //     const res = await axios.post("http://localhost:4000/api/auth/verify", {
+  //       email,
+  //       otp: otpString,
+  //     });
+
+  //     const { user, token } = res.data;
+  //     login(user, token);
+
+  //     // Clean up temporary OTP session data
+  //     localStorage.removeItem("pendingEmail");
+  //     localStorage.removeItem("pendingRole");
+
+  //     // Redirect based on role or booking state
+
+  //     const role = user.role?.toLowerCase();
+  //     console.log("✅ Role:", role);
+
+  //     if (role !== "user") {
+  //       // All hosts, services, experiences
+  //       const subRes = await axios.get(
+  //         "http://localhost:4000/api/subscription/status",
+  //         {
+  //           headers: { Authorization: `Bearer ${token}` },
+  //         }
+  //       );
+
+  //       const { isActive } = subRes.data;
+
+  //       if (!isActive) {
+  //         navigate("/host/subscription");
+  //       } else if (!user.isHostApproved) {
+  //         navigate("/waiting-approval");
+  //       } else {
+  //         navigate("/host/dashboard");
+  //       }
+  //     } else {
+  //       // user role
+  //       bookingData ? navigate("/confirm") : navigate("/");
+  //     }
+  //   } catch (err) {
+  //     setError(err.response?.data?.message || "Invalid OTP. Try again.");
+  //     setOtp(["", "", "", "", "", ""]);
+  //     inputRefs.current[0]?.focus();
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
+  // const handleResendOtp = async () => {
+  //   setError("");
+  //   setIsLoading(true);
+  //   try {
+  //     await axios.post("http://localhost:4000/api/auth/resend", { email });
+  //   } catch (err) {
+  //     setError("Failed to resend OTP");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   const handleVerify = async (e) => {
     e.preventDefault();
     setError("");
@@ -67,33 +140,16 @@ const VerifyOtpPage = () => {
 
     setIsLoading(true);
     try {
-      const res = await axios.post("http://localhost:4000/api/auth/verify", {
-        email,
-        otp: otpString,
-      });
-
-      const { user, token } = res.data;
+      const { user, token } = await verifyOtp(email, otpString);
       login(user, token);
 
-      // Clean up temporary OTP session data
       localStorage.removeItem("pendingEmail");
       localStorage.removeItem("pendingRole");
 
-      // Redirect based on role or booking state
-
       const role = user.role?.toLowerCase();
-      console.log("✅ Role:", role);
 
       if (role !== "user") {
-        // All hosts, services, experiences
-        const subRes = await axios.get(
-          "http://localhost:4000/api/subscription/status",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        const { isActive } = subRes.data;
+        const { isActive } = await getSubscriptionStatus(token);
 
         if (!isActive) {
           navigate("/host/subscription");
@@ -103,25 +159,12 @@ const VerifyOtpPage = () => {
           navigate("/host/dashboard");
         }
       } else {
-        // user role
         bookingData ? navigate("/confirm") : navigate("/");
       }
     } catch (err) {
       setError(err.response?.data?.message || "Invalid OTP. Try again.");
       setOtp(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setError("");
-    setIsLoading(true);
-    try {
-      await axios.post("http://localhost:4000/api/auth/resend", { email });
-    } catch (err) {
-      setError("Failed to resend OTP");
     } finally {
       setIsLoading(false);
     }

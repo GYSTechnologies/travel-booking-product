@@ -2,6 +2,12 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useSuperAdmin } from "../contexts/SuperAdminContext";
 import { toast } from "react-toastify";
+import {
+  fetchPendingListings,
+  approveListing,
+  rejectListing,
+} from "../api/allAPIs"; // centralized API path
+
 
 const PendingListingsPage = () => {
   const [listings, setListings] = useState([]);
@@ -18,86 +24,141 @@ const PendingListingsPage = () => {
 
   const { token } = useSuperAdmin();
 
-  const fetchListings = async () => {
-    if (!token) return;
-    try {
-      setLoading(true);
-      const res = await axios.get(
-        `http://localhost:4000/api/super-admin/listings/pending?type=${typeFilter}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+  // const fetchListings = async () => {
+  //   if (!token) return;
+  //   try {
+  //     setLoading(true);
+  //     const res = await axios.get(
+  //       `http://localhost:4000/api/super-admin/listings/pending?type=${typeFilter}`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
 
-      const data = res.data;
-      setAllListings(data);
-      const currentData = data[typeFilter + "s"] || [];
-      setListings(currentData.map((item) => ({ ...item, type: typeFilter })));
-    } catch (err) {
-      console.error("Failed to fetch pending listings", err);
-      toast.error("Failed to load listings");
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     const data = res.data;
+  //     setAllListings(data);
+  //     const currentData = data[typeFilter + "s"] || [];
+  //     setListings(currentData.map((item) => ({ ...item, type: typeFilter })));
+  //   } catch (err) {
+  //     console.error("Failed to fetch pending listings", err);
+  //     toast.error("Failed to load listings");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  useEffect(() => {
-    fetchListings();
-  }, [typeFilter, token]);
+  // useEffect(() => {
+  //   fetchListings();
+  // }, [typeFilter, token]);
 
-  const handleApprove = async (id, type) => {
-    try {
-      await axios.put(
-        `http://localhost:4000/api/super-admin/listing/${type}/${id}/approve`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      toast.success("Listing approved");
-      setListings((prev) => prev.filter((item) => item._id !== id));
+  // const handleApprove = async (id, type) => {
+  //   try {
+  //     await axios.put(
+  //       `http://localhost:4000/api/super-admin/listing/${type}/${id}/approve`,
+  //       {},
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
+  //     toast.success("Listing approved");
+  //     setListings((prev) => prev.filter((item) => item._id !== id));
 
-      // Update allListings count
-      setAllListings((prev) => ({
-        ...prev,
-        [type + "s"]: prev[type + "s"].filter((item) => item._id !== id),
-      }));
-    } catch (err) {
-      console.error("Failed to approve listing", err);
-      toast.error("Approval failed");
-    }
-  };
+  //     // Update allListings count
+  //     setAllListings((prev) => ({
+  //       ...prev,
+  //       [type + "s"]: prev[type + "s"].filter((item) => item._id !== id),
+  //     }));
+  //   } catch (err) {
+  //     console.error("Failed to approve listing", err);
+  //     toast.error("Approval failed");
+  //   }
+  // };
 
-  const handleReject = async (id, type) => {
-    const reason = prompt("Enter rejection reason:");
-    if (!reason) return;
-    try {
-      await axios.put(
-        `http://localhost:4000/api/super-admin/listing/${type}/${id}/reject`,
-        { reason },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      toast.success("Listing rejected");
-      setListings((prev) => prev.filter((item) => item._id !== id));
+  // const handleReject = async (id, type) => {
+  //   const reason = prompt("Enter rejection reason:");
+  //   if (!reason) return;
+  //   try {
+  //     await axios.put(
+  //       `http://localhost:4000/api/super-admin/listing/${type}/${id}/reject`,
+  //       { reason },
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
+  //     toast.success("Listing rejected");
+  //     setListings((prev) => prev.filter((item) => item._id !== id));
 
-      // Update allListings count
-      setAllListings((prev) => ({
-        ...prev,
-        [type + "s"]: prev[type + "s"].filter((item) => item._id !== id),
-      }));
-    } catch (err) {
-      console.error("Failed to reject listing", err);
-      toast.error("Rejection failed");
-    }
-  };
+  //     // Update allListings count
+  //     setAllListings((prev) => ({
+  //       ...prev,
+  //       [type + "s"]: prev[type + "s"].filter((item) => item._id !== id),
+  //     }));
+  //   } catch (err) {
+  //     console.error("Failed to reject listing", err);
+  //     toast.error("Rejection failed");
+  //   }
+  // };
+
+
+const fetchListings = async () => {
+  if (!token) return;
+  try {
+    setLoading(true);
+    const data = await fetchPendingListings(token, typeFilter);
+    setAllListings(data);
+    const currentData = data[typeFilter + "s"] || [];
+    setListings(currentData.map((item) => ({ ...item, type: typeFilter })));
+  } catch (err) {
+    console.error("Failed to fetch pending listings", err);
+    toast.error("Failed to load listings");
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  fetchListings();
+}, [typeFilter, token]);
+
+const handleApprove = async (id, type) => {
+  try {
+    await approveListing(token, type, id);
+    toast.success("Listing approved");
+    setListings((prev) => prev.filter((item) => item._id !== id));
+    setAllListings((prev) => ({
+      ...prev,
+      [type + "s"]: prev[type + "s"].filter((item) => item._id !== id),
+    }));
+  } catch (err) {
+    console.error("Failed to approve listing", err);
+    toast.error("Approval failed");
+  }
+};
+
+const handleReject = async (id, type) => {
+  const reason = prompt("Enter rejection reason:");
+  if (!reason) return;
+  try {
+    await rejectListing(token, type, id, reason);
+    toast.success("Listing rejected");
+    setListings((prev) => prev.filter((item) => item._id !== id));
+    setAllListings((prev) => ({
+      ...prev,
+      [type + "s"]: prev[type + "s"].filter((item) => item._id !== id),
+    }));
+  } catch (err) {
+    console.error("Failed to reject listing", err);
+    toast.error("Rejection failed");
+  }
+};
+
+
 
   const handleDocumentClick = (doc) => {
     setSelectedDocument(doc);

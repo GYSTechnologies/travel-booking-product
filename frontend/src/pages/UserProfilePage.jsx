@@ -3,6 +3,9 @@ import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "react-toastify";
 
+import { fetchUserProfile, updateUserProfile } from "../api/allAPIs";
+
+
 const UserProfilePage = () => {
   const { token, user, setUser } = useAuth();
 
@@ -17,27 +20,48 @@ const UserProfilePage = () => {
   const [newImage, setNewImage] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // useEffect(() => {
+  //   const fetchProfile = async () => {
+  //     try {
+  //       const res = await axios.get("http://localhost:4000/api/user/profile", {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       const data = res.data;
+  //       setFormData({
+  //         username: data.username || "",
+  //         email: data.email || "",
+  //         phone: data.phone || "",
+  //         address: data.address || "",
+  //         profileImage: data.profileImage || "",
+  //       });
+  //     } catch (err) {
+  //       toast.error("Failed to fetch profile");
+  //       console.error(err);
+  //     }
+  //   };
+  //   if (token) fetchProfile();
+  // }, [token]);
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await axios.get("http://localhost:4000/api/user/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = res.data;
-        setFormData({
-          username: data.username || "",
-          email: data.email || "",
-          phone: data.phone || "",
-          address: data.address || "",
-          profileImage: data.profileImage || "",
-        });
-      } catch (err) {
-        toast.error("Failed to fetch profile");
-        console.error(err);
-      }
-    };
-    if (token) fetchProfile();
-  }, [token]);
+  const loadProfile = async () => {
+    try {
+      const data = await fetchUserProfile(token);
+      setFormData({
+        username: data.username || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        address: data.address || "",
+        profileImage: data.profileImage || "",
+      });
+    } catch (err) {
+      toast.error("Failed to fetch profile");
+      console.error(err);
+    }
+  };
+
+  if (token) loadProfile();
+}, [token]);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -55,31 +79,46 @@ const UserProfilePage = () => {
     }
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   try {
+  //     const fd = new FormData();
+  //     fd.append("username", formData.username);
+  //     fd.append("phone", formData.phone);
+  //     fd.append("address", formData.address);
+  //     if (newImage) fd.append("profileImage", newImage);
+
+  //     const res = await axios.put("http://localhost:4000/api/user/update", fd, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         "Content-Type": "multipart/form-data",
+  //       },
+  //     });
+
+  //     toast.success("Profile updated!");
+  //     setUser(res.data.user);
+  //   } catch (err) {
+  //     toast.error(err.response?.data?.message || "Update failed");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const fd = new FormData();
-      fd.append("username", formData.username);
-      fd.append("phone", formData.phone);
-      fd.append("address", formData.address);
-      if (newImage) fd.append("profileImage", newImage);
+  e.preventDefault();
+  setLoading(true);
+  try {
+    const res = await updateUserProfile(token, formData, newImage);
+    toast.success("Profile updated!");
+    setUser(res.user);
+  } catch (err) {
+    toast.error(err.response?.data?.message || "Update failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      const res = await axios.put("http://localhost:4000/api/user/update", fd, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      toast.success("Profile updated!");
-      setUser(res.data.user);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Update failed");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 py-4 px-4 sm:py-8 lg:py-12">

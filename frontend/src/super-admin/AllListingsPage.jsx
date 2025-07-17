@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useSuperAdmin } from "../contexts/SuperAdminContext"; // ✅ import context
+import { fetchAllListingsByType } from "../api/allAPIs";
+
 
 const AllListingsPage = () => {
   const [listings, setListings] = useState([]);
@@ -11,24 +13,36 @@ const AllListingsPage = () => {
 
   const { token } = useSuperAdmin(); // ✅ get token from context
 
+  // const fetchListings = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const res = await axios.get(
+  //       `http://localhost:4000/api/super-admin/listings/all?type=${typeFilter}`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`, // ✅ add token here
+  //         },
+  //       }
+  //     );
+  //     setListings(res.data);
+  //   } catch (err) {
+  //     console.error("Failed to fetch listings:", err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const fetchListings = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(
-        `http://localhost:4000/api/super-admin/listings/all?type=${typeFilter}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // ✅ add token here
-          },
-        }
-      );
-      setListings(res.data);
-    } catch (err) {
-      console.error("Failed to fetch listings:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    const data = await fetchAllListingsByType(token, typeFilter);
+    setListings(data);
+  } catch (err) {
+    console.error("Failed to fetch listings:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     if (token) {

@@ -6,6 +6,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { MapPin, Star, Shield, Users, Calendar, Clock } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { fetchExperienceById, fetchExperienceSlots } from "../api/allAPIs";
 
 const ExperienceDetail = () => {
   const { id } = useParams();
@@ -23,15 +24,13 @@ const ExperienceDetail = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedSlotData, setSelectedSlotData] = useState(null);
 
-  // const isFormComplete = formData.date && formData.guests > 0;
-
+ 
   useEffect(() => {
     const fetchExperience = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:4000/api/experiences/experience-detail/${id}`
-        );
-        setExperience(res.data);
+             const data = await fetchExperienceById(id);
+      setExperience(data);
+
       } catch (err) {
         console.error("Failed to fetch experience detail", err);
       }
@@ -43,11 +42,9 @@ const ExperienceDetail = () => {
     const fetchSlots = async () => {
       if (!formData.date) return;
       try {
-        const res = await axios.get(
-          `http://localhost:4000/api/experiences/${id}/slots?date=${formData.date}`
-        );
-        console.log("Fetched slots:", res.data);
-        setAvailableSlots(res.data);
+        const data = await fetchExperienceSlots(id, formData.date);
+
+      setAvailableSlots(data);
       } catch (err) {
         console.error("Failed to fetch slots:", err);
       }

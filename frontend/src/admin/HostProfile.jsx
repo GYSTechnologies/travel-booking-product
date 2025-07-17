@@ -3,6 +3,13 @@ import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "react-toastify";
 
+import {
+  fetchHostProfileAPI,
+  updateHostProfileAPI,
+} from "../api/allAPIs";
+
+
+
 const HostProfile = () => {
   const { user, token, updateUser } = useAuth();
 
@@ -17,30 +24,45 @@ const HostProfile = () => {
   const [loading, setLoading] = useState(false);
 
   // Prefill from user context
+  // const fetchHostProfile = async () => {
+  //   try {
+  //     const res = await axios.get(
+  //       "http://localhost:4000/api/user/host-profile",
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
+
+  //     const userData = res.data.user;
+  //     setFormData({
+  //       username: userData.username || "",
+  //       phone: userData.phone || "",
+  //       address: userData.address || "",
+  //       profileImage: userData.profileImage || "",
+  //     });
+
+  //     setProfilePreview(userData.profileImage || "");
+  //   } catch (err) {
+  //     toast.error("Failed to fetch host profile");
+  //   }
+  // };
   const fetchHostProfile = async () => {
-    try {
-      const res = await axios.get(
-        "http://localhost:4000/api/user/host-profile",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+  try {
+    const userData = await fetchHostProfileAPI(token);
+    setFormData({
+      username: userData.username || "",
+      phone: userData.phone || "",
+      address: userData.address || "",
+      profileImage: userData.profileImage || "",
+    });
+    setProfilePreview(userData.profileImage || "");
+  } catch (err) {
+    toast.error("Failed to fetch host profile");
+  }
+};
 
-      const userData = res.data.user;
-      setFormData({
-        username: userData.username || "",
-        phone: userData.phone || "",
-        address: userData.address || "",
-        profileImage: userData.profileImage || "",
-      });
-
-      setProfilePreview(userData.profileImage || "");
-    } catch (err) {
-      toast.error("Failed to fetch host profile");
-    }
-  };
 
   useEffect(() => {
     fetchHostProfile();
@@ -58,51 +80,71 @@ const HostProfile = () => {
     setProfilePreview(URL.createObjectURL(file));
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+
+  //   try {
+  //     const form = new FormData();
+  //     form.append("username", formData.username);
+  //     form.append("phone", formData.phone);
+  //     form.append("address", formData.address);
+
+  //     if (formData.profileImage instanceof File) {
+  //       form.append("profileImage", formData.profileImage);
+  //     }
+
+  //     const res = await axios.put(
+  //       "http://localhost:4000/api/user/host-profile-update",
+  //       form,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "Content-Type": "multipart/form-data",
+  //         },
+  //       }
+  //     );
+
+  //     // ✅ Update user in context
+  //     updateUser(res.data.user);
+
+  //     // ✅ Reflect updated values in local UI
+  //     setFormData({
+  //       username: res.data.user.username || "",
+  //       phone: res.data.user.phone || "",
+  //       address: res.data.user.address || "",
+  //       profileImage: res.data.user.profileImage || "",
+  //     });
+  //     setProfilePreview(res.data.user.profileImage || "");
+
+  //     toast.success("Profile updated successfully!");
+  //   } catch (err) {
+  //     toast.error(err?.response?.data?.message || "Update failed");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const form = new FormData();
-      form.append("username", formData.username);
-      form.append("phone", formData.phone);
-      form.append("address", formData.address);
-
-      if (formData.profileImage instanceof File) {
-        form.append("profileImage", formData.profileImage);
-      }
-
-      const res = await axios.put(
-        "http://localhost:4000/api/user/host-profile-update",
-        form,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      // ✅ Update user in context
-      updateUser(res.data.user);
-
-      // ✅ Reflect updated values in local UI
-      setFormData({
-        username: res.data.user.username || "",
-        phone: res.data.user.phone || "",
-        address: res.data.user.address || "",
-        profileImage: res.data.user.profileImage || "",
-      });
-      setProfilePreview(res.data.user.profileImage || "");
-
-      toast.success("Profile updated successfully!");
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Update failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  e.preventDefault();
+  setLoading(true);
+  try {
+    const updatedUser = await updateHostProfileAPI(token, formData);
+    updateUser(updatedUser);
+    setFormData({
+      username: updatedUser.username || "",
+      phone: updatedUser.phone || "",
+      address: updatedUser.address || "",
+      profileImage: updatedUser.profileImage || "",
+    });
+    setProfilePreview(updatedUser.profileImage || "");
+    toast.success("Profile updated successfully!");
+  } catch (err) {
+    toast.error(err?.response?.data?.message || "Update failed");
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col p-4 sm:p-6">
       <div className="max-w-4xl w-full mx-auto flex flex-col flex-1 overflow-hidden">

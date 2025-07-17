@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { registerUser } from "../api/allAPIs";
+
 import axios from "axios";
 import {
   User,
@@ -55,52 +57,71 @@ const RegisterPage = () => {
     }
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setError("");
+  //   setIsLoading(true);
+
+  //   try {
+  //     const form = new FormData();
+  //     for (const key in formData) {
+  //       if (key === "hostType" && formData.role === "host") {
+  //         form.append("hostType", formData.hostType);
+  //       } else if (key !== "hostType" && formData[key]) {
+  //         form.append(key, formData[key]);
+  //       }
+  //     }
+
+  //     // ✅ Add KYC documents
+  //     if (formData.role === "host") {
+  //       kycDocs.forEach((file) => {
+  //         if (file) form.append("documents", file);
+  //       });
+
+  //       docTypes.forEach((type) => {
+  //         form.append("documentTypes", type);
+  //       });
+  //     }
+
+  //     const res = await axios.post(
+  //       "http://localhost:4000/api/auth/register",
+  //       form,
+  //       {
+  //         headers: {
+  //           "Content-Type": "multipart/form-data",
+  //         },
+  //       }
+  //     );
+
+  //     localStorage.setItem("pendingEmail", formData.email);
+  //     navigate("/verify-otp");
+  //   } catch (err) {
+  //     setError(
+  //       err.response?.data?.message || "Registration failed. Try again later."
+  //     );
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+  e.preventDefault();
+  setError("");
+  setIsLoading(true);
 
-    try {
-      const form = new FormData();
-      for (const key in formData) {
-        if (key === "hostType" && formData.role === "host") {
-          form.append("hostType", formData.hostType);
-        } else if (key !== "hostType" && formData[key]) {
-          form.append(key, formData[key]);
-        }
-      }
+  try {
+    await registerUser(formData, kycDocs, docTypes);
 
-      // ✅ Add KYC documents
-      if (formData.role === "host") {
-        kycDocs.forEach((file) => {
-          if (file) form.append("documents", file);
-        });
-
-        docTypes.forEach((type) => {
-          form.append("documentTypes", type);
-        });
-      }
-
-      const res = await axios.post(
-        "http://localhost:4000/api/auth/register",
-        form,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      localStorage.setItem("pendingEmail", formData.email);
-      navigate("/verify-otp");
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Registration failed. Try again later."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    localStorage.setItem("pendingEmail", formData.email);
+    navigate("/verify-otp");
+  } catch (err) {
+    setError(
+      err.response?.data?.message || "Registration failed. Try again later."
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center px-4 py-8">
@@ -311,58 +332,6 @@ const RegisterPage = () => {
           )}
 
           {/* KYC Document Upload (Only for Host) */}
-          {/* {formData.role === "host" && (
-            <div className="mb-6 p-4 bg-white rounded-xl border border-gray-200">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Upload Mandatory KYC Documents
-              </label>
-              <div className="space-y-4">
-                {[
-                  { label: "Aadhaar Card", docType: "aadhaar" },
-                  { label: "PAN Card", docType: "pan" },
-                ].map((item, index) => (
-                  <div key={item.docType}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {item.label}
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      required
-                      onChange={(e) => {
-                        const updated = [...kycDocs];
-                        updated[index] = e.target.files[0];
-                        setKycDocs(updated);
-
-                        const types = [...docTypes];
-                        types[index] = item.docType;
-                        setDocTypes(types);
-                      }}
-                      className="block w-full text-sm text-gray-700 border border-gray-300 rounded-md file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )} */}
-
-          {/* Submit */}
-          {/* <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold hover:from-emerald-600 hover:to-teal-600 transition disabled:opacity-50 shadow-lg"
-          >
-            {isLoading ? (
-              <div className="flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent animate-spin rounded-full mr-2" />
-                Creating Account...
-              </div>
-            ) : (
-              "Create Account"
-            )}
-          </button> */}
-
-          {/* KYC Document Upload (Only for Host) */}
           {formData.role === "host" && (
             <div className="mb-6 p-4 bg-white rounded-xl border border-gray-200">
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -415,7 +384,7 @@ const RegisterPage = () => {
                     ) : (
                       <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
                         <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center">
+                          {/* <div className="flex items-center">
                             {kycDocs[index].type.startsWith("image/") ? (
                               <Camera className="w-5 h-5 text-blue-500 mr-2" />
                             ) : (
@@ -424,7 +393,22 @@ const RegisterPage = () => {
                             <span className="text-sm font-medium text-gray-700">
                               {kycDocs[index].name}
                             </span>
+                          </div> */}
+
+                          <div className="flex items-center">
+                            {kycDocs[index].type.startsWith("image/") ? (
+                              <Camera className="w-5 h-5 text-blue-500 mr-2" />
+                            ) : (
+                              <FileText className="w-5 h-5 text-red-500 mr-2" />
+                            )}
+                            <span
+                              className="text-sm font-medium text-gray-700 max-w-[150px] truncate whitespace-nowrap overflow-hidden"
+                              title={kycDocs[index].name} 
+                            >
+                              {kycDocs[index].name}
+                            </span>
                           </div>
+
                           <button
                             type="button"
                             disabled={isLoading}

@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useSuperAdmin } from "../contexts/SuperAdminContext";
 import { toast } from "react-toastify";
+import { fetchApprovedHosts } from "../api/allAPIs";
+
 
 const ApprovedHostsPage = () => {
   const [hosts, setHosts] = useState([]);
@@ -10,30 +12,44 @@ const ApprovedHostsPage = () => {
 
   const { token } = useSuperAdmin(); // ✅ get token
 
-  const fetchApprovedHosts = async () => {
-    if (!token) return;
-    try {
-      setLoading(true);
-      const res = await axios.get(
-        "http://localhost:4000/api/super-admin/hosts/approved",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, 
-          },
-        }
-      );
-      // Use `.hosts` only if backend returns { hosts: [...] }
-      setHosts(Array.isArray(res.data.hosts) ? res.data.hosts : res.data);
-    } catch (error) {
-      console.error("Failed to fetch approved hosts:", error);
-      toast.error("Error fetching approved hosts");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const fetchApprovedHosts = async () => {
+  //   if (!token) return;
+  //   try {
+  //     setLoading(true);
+  //     const res = await axios.get(
+  //       "http://localhost:4000/api/super-admin/hosts/approved",
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`, 
+  //         },
+  //       }
+  //     );
+  //     // Use `.hosts` only if backend returns { hosts: [...] }
+  //     setHosts(Array.isArray(res.data.hosts) ? res.data.hosts : res.data);
+  //   } catch (error) {
+  //     console.error("Failed to fetch approved hosts:", error);
+  //     toast.error("Error fetching approved hosts");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const loadApprovedHosts = async () => {
+  if (!token) return;
+  try {
+    setLoading(true);
+    const data = await fetchApprovedHosts(token);
+    setHosts(data);
+  } catch (err) {
+    console.error("Failed to fetch approved hosts:", err);
+    toast.error("Error fetching approved hosts");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
-    fetchApprovedHosts();
+    loadApprovedHosts();
   }, [token]);
 
   const formatPlan = (plan) => {

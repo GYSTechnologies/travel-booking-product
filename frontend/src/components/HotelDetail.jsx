@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import axios from "axios";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { fetchHotelById, fetchHotelAvailability } from "../api/allAPIs";
 
 import {
   Star,
@@ -55,18 +54,16 @@ const HotelDetail = () => {
   // Get tomorrow's date in YYYY-MM-DD format
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowDate = tomorrow.toISOString().split("T")[0];
 
   useEffect(() => {
     const fetchHotel = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:4000/api/host/hotel-detail/${id}`,
-          {
-            params: { checkIn: formData.checkIn, checkOut: formData.checkOut },
-          }
+        const data = await fetchHotelById(
+          id,
+          formData.checkIn,
+          formData.checkOut
         );
-        setHotel(res.data);
+        setHotel(data);
       } catch (err) {
         console.error("Failed to fetch hotel:", err);
       }
@@ -74,18 +71,40 @@ const HotelDetail = () => {
     fetchHotel();
   }, [id]);
 
+  // useEffect(() => {
+  //   const fetchAvailability = async () => {
+  //     if (!formData.checkIn || !formData.checkOut) return;
+
+  //     try {
+  //       const res = await axiosInstance.get(
+  //         `/host/${id}/availability`,
+  //         { params: { checkIn: formData.checkIn, checkOut: formData.checkOut } }
+  //       );
+  //       setHotel((prev) => ({
+  //         ...prev,
+  //         availableRooms: res.data.availableRooms,
+  //       }));
+  //     } catch (err) {
+  //       console.error("Failed to fetch availability:", err);
+  //     }
+  //   };
+
+  //   fetchAvailability();
+  // }, [formData.checkIn, formData.checkOut]);
+ 
   useEffect(() => {
     const fetchAvailability = async () => {
       if (!formData.checkIn || !formData.checkOut) return;
 
       try {
-        const res = await axios.get(
-          `http://localhost:4000/api/host/${id}/availability`,
-          { params: { checkIn: formData.checkIn, checkOut: formData.checkOut } }
+        const data = await fetchHotelAvailability(
+          id,
+          formData.checkIn,
+          formData.checkOut
         );
         setHotel((prev) => ({
           ...prev,
-          availableRooms: res.data.availableRooms,
+          availableRooms: data.availableRooms,
         }));
       } catch (err) {
         console.error("Failed to fetch availability:", err);
@@ -118,14 +137,6 @@ const HotelDetail = () => {
   const validRoomCount = Math.ceil(formData.guests / 2);
   const totalPrice =
     calculateNights() * hotel?.pricePerNight * validRoomCount || 0;
-
-  const amenityIcons = {
-    "Free WiFi": <Wifi className="w-4 h-4 text-emerald-600" />,
-    "Swimming Pool": <Waves className="w-4 h-4 text-emerald-600" />,
-    Restaurant: <Utensils className="w-4 h-4 text-emerald-600" />,
-    Parking: <Car className="w-4 h-4 text-emerald-600" />,
-    "Room Service": <Coffee className="w-4 h-4 text-emerald-600" />,
-  };
 
   const amenityMap = {
     wifi: {
@@ -184,14 +195,6 @@ const HotelDetail = () => {
     ...matchedStandardAmenities,
     ...additionalAmenities,
   ];
-
-  // const standardAmenities = [
-  //   "Free WiFi",
-  //   "Swimming Pool",
-  //   "Restaurant",
-  //   "Parking",
-  //   "Room Service",
-  // ];
 
   if (!hotel)
     return (
