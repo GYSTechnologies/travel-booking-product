@@ -34,8 +34,6 @@ export const sendEmail = async (email, otp) => {
 };
 
 // ✅ Booking Confirmation Email
-
-
 export const sendBookingConfirmationEmail = async (email, details) => {
   const {
     title = "Your Booking",
@@ -189,7 +187,6 @@ export const EarningsReportEmail = async (
   await transporter.sendMail(mailOptions);
 };
 
-// utils/mailer.js
 
 export const userCancelBooking = async (
   email,
@@ -307,7 +304,6 @@ export const hostCancelBooking = async (email, details) => {
 };
 
 
-
 export const sendSubscriptionConfirmationEmail = async (email, details) => {
   const { plan, endDate, price } = details;
   const formattedDate = new Date(endDate).toLocaleDateString("en-IN");
@@ -391,3 +387,144 @@ export const sendTrialActivationEmail = async (email, endDate) => {
   await transporter.sendMail(mailOptions);
 };
 
+
+export const sendListingApprovalEmail = async (email, { title, type }) => {
+  const formattedType = type.charAt(0).toUpperCase() + type.slice(1); // Hotel, Service, Experience
+
+  const mailOptions = {
+    from: `"Ghumakad Web App" <${process.env.MAIL_USER}>`,
+    to: email,
+    subject: `✅ Your ${formattedType} Listing is Approved – Start Hosting!`,
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
+        <h2 style="color: #10b981;">${formattedType} Listing Approved 🎉</h2>
+        
+        <p>Dear Host,</p>
+
+        <p>Your listing <strong>"${title}"</strong> under <strong>${formattedType}</strong> category has been <span style="color: green;"><strong>approved</strong></span> by our team.</p>
+        
+        <p>You can now start accepting bookings and manage your listing through your <a href="${process.env.CLIENT_URL}/dashboard" style="color: #0ea5e9;">Ghumakad Host Dashboard</a>.</p>
+        
+        <br/>
+        <p>Keep delivering amazing experiences 🙌</p>
+        <p>– Team Ghumakad</p>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+export const sendListingRejectionEmail = async (email, { title, type, reason }) => {
+  const formattedType = type.charAt(0).toUpperCase() + type.slice(1); // Hotel → Hotel
+
+  const mailOptions = {
+    from: `"Ghumakad Web App" <${process.env.MAIL_USER}>`,
+    to: email,
+    subject: `⚠️ ${formattedType} Listing Rejected – Action Required`,
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
+        <h2 style="color: #ef4444;">${formattedType} Listing Rejected</h2>
+
+        <p>Dear Host,</p>
+
+        <p>We're sorry to inform you that your <strong>${formattedType}</strong> listing titled <strong>"${title}"</strong> has been <span style="color: red;"><strong>rejected</strong></span> by our verification team.</p>
+
+        <p><strong>Reason for rejection:</strong></p>
+        <blockquote style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 10px;">
+          ${reason}
+        </blockquote>
+
+        <p>Please review and make necessary changes before resubmitting.</p>
+
+        <a href="${process.env.CLIENT_URL}/dashboard" style="display: inline-block; margin-top: 15px; background-color: #0f766e; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none;">
+          Go to Host Dashboard
+        </a>
+
+        <br/><br/>
+        <p>– Team Ghumakad</p>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+export const sendHostApprovalEmail = async (
+  email,
+  { username, plan, endDate, token }
+) => {
+  const formattedEndDate = new Date(endDate).toLocaleDateString("en-IN");
+
+  const dashboardLink = `${process.env.FRONTEND_URL}/magic-login?token=${token}`;
+
+  const mailOptions = {
+    from: `"Ghumakad Web App" <${process.env.MAIL_USER}>`,
+    to: email,
+    subject: `🎉 You're Now an Approved Host on Ghumakad!`,
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #333; padding: 20px; max-width: 600px; margin: auto;">
+        <h2 style="color: #0f766e;">Hey ${username},</h2>
+
+        <p>Great news! Your hosting profile has been <strong>approved</strong> by our team after verifying your documents. Welcome aboard the <strong>Ghumakad</strong> community! 🚀</p>
+
+        <div style="background-color: #f0fdfa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p>🌟 <strong>Subscription Plan:</strong> ${plan}</p>
+          <p>📅 <strong>Valid Until:</strong> ${formattedEndDate}</p>
+        </div>
+
+        <p style="margin-top: 10px;">
+          To get started, click the button below to access your host dashboard.
+          <br />
+          <strong>Note:</strong> This is a <u>secure one-time login link</u> and will expire in <strong>10 minutes</strong>. Please use it immediately.
+        </p>
+
+        <p style="margin-top: 20px;">
+          <a href="${dashboardLink}" style="display: inline-block; background-color:#0f766e; color:white; padding:12px 24px; border-radius:6px; text-decoration:none; font-weight: bold;">
+            Go to My Host Dashboard
+          </a>
+        </p>
+
+        <p style="margin-top: 30px; font-size: 14px; color: #555;">
+          If this link expires before you use it, please contact our support team and we'll send you a new one.
+        </p>
+
+        <hr style="margin: 30px 0;" />
+
+        <p style="font-size: 14px; color: #666;">Happy Hosting!<br/>– Team Ghumakad</p>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+
+export const sendHostRejectionEmail = async (email, { reason }) => {
+  const mailOptions = {
+    from: `"Ghumakad Web App" <${process.env.MAIL_USER}>`,
+    to: email,
+    subject: `⚠️ Your Host Registration Was Rejected – Ghumakad`,
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
+        <h2 style="color: #dc2626;">Host Application Rejected</h2>
+
+        <p>We're sorry to inform you that your host registration on <strong>Ghumakad</strong> has been <strong>rejected</strong> after manual verification by our team.</p>
+
+        <p><strong>Reason:</strong></p>
+        <blockquote style="border-left: 4px solid #f87171; margin: 10px 0; padding-left: 15px; color: #b91c1c;">
+          ${reason}
+        </blockquote>
+
+        <p>You may reapply after addressing the issue(s) mentioned above.</p>
+
+        <p>If you believe this was a mistake or need clarification, feel free to reach out to our support team.</p>
+
+        <br/>
+        <p>– Team Ghumakad</p>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};

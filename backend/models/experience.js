@@ -38,12 +38,51 @@ const experienceSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    maxGuests: {
-      type: Number,
-      required: true,
+
+    // ✅ Replace `maxGuests` with slot-based capacity like service
+    slots: [
+      {
+        startTime: {
+          type: String, // "11:00"
+          required: true,
+        },
+        endTime: {
+          type: String, // "13:00"
+          required: true,
+        },
+        maxGuests: {
+          type: Number,
+          required: true,
+        },
+      },
+    ],
+
+    // ✅ NEW: Track booked guests for each date + slot
+    availability: [
+      {
+        date: {
+          type: String, // "YYYY-MM-DD"
+          required: true,
+        },
+        slot: {
+          startTime: String,
+          endTime: String,
+        },
+        bookedGuests: {
+          type: Number,
+          default: 0,
+        },
+      },
+    ],
+
+    images: {
+      type: [String],
+      default: [],
     },
-    images: [String],
-    highlights: [String], 
+    highlights: {
+      type: [String],
+      default: [],
+    },
     aboutHost: {
       type: String,
     },
@@ -51,12 +90,37 @@ const experienceSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    // ✅ Admin Control
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    documents: [
+      {
+        docType: String,
+        url: String,
+        status: {
+          type: String,
+          enum: ["pending", "approved", "rejected"],
+          default: "pending",
+        },
+        rejectionReason: {
+          type: String,
+          default: "",
+        },
+      },
+    ],
+    rejectionReason: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );
 
-// ✅ Register both names for dynamic population
-mongoose.model("experience", experienceSchema); // for refPath: "type" = "experience"
-const Experience = mongoose.model("Experience", experienceSchema); // main model
-
+// ✅ Register both lowercase and capitalized
+mongoose.model("experience", experienceSchema);
+const Experience = mongoose.model("Experience", experienceSchema);
 export default Experience;

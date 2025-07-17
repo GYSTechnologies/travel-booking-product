@@ -1,7 +1,8 @@
-
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 dotenv.config();
+import path from "path";
+
 
 // Cloudinary config
 cloudinary.config({
@@ -10,15 +11,48 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Upload helper function
+// export const uploadToCloudinary = (localPath, folder = "uploads") => {
+//   return new Promise((resolve, reject) => {
+//     cloudinary.uploader.upload(
+//       localPath,
+//       {
+//         folder,
+//         resource_type: "auto",
+//       },
+//       (error, result) => {
+//         if (error) {
+//           console.error("❌ Cloudinary Upload Failed:", error);
+//           reject(error);
+//         } else {
+//           console.log("✅ Uploaded to Cloudinary:", result.secure_url);
+//           resolve(result);
+//         }
+//       }
+//     );
+//   });
+// };
+
+
 export const uploadToCloudinary = (localPath, folder = "uploads") => {
   return new Promise((resolve, reject) => {
+    const fileExt = path.extname(localPath).toLowerCase();
+    const isPDF = fileExt === ".pdf";
+
     cloudinary.uploader.upload(
       localPath,
-      { folder },
+      {
+        folder,
+        resource_type: isPDF ? "raw" : "auto", // 👈 force raw for PDFs
+      },
       (error, result) => {
-        if (error) reject(error);
-        else resolve(result);
+        if (error) {
+          console.error("❌ Cloudinary Upload Failed:", error);
+          reject(error);
+        } else {
+          console.log("✅ Uploaded to Cloudinary:", result.secure_url);
+          console.log("📦 Resource Type:", result.resource_type);
+          resolve(result);
+        }
       }
     );
   });

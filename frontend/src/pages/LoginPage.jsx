@@ -44,7 +44,6 @@ const LoginPage = () => {
       login(user, token);
 
       if (isHostLogin && user.role === "host") {
-        // 🧠 Check subscription status before redirecting host
         const subRes = await axios.get(
           "http://localhost:4000/api/subscription/status",
           {
@@ -56,10 +55,15 @@ const LoginPage = () => {
 
         const { isActive } = subRes.data;
 
-        if (isActive) {
-          navigate("/host/dashboard");
-        } else {
+        if (!isActive) {
+          // 🛑 Not subscribed yet
           navigate("/host/subscription");
+        } else if (!user.isHostApproved) {
+          // 🟡 Subscribed but still waiting for approval
+          navigate("/waiting-approval");
+        } else {
+          // ✅ Subscribed + Approved
+          navigate("/host/dashboard");
         }
       } else if (!isHostLogin && user.role === "user") {
         bookingData ? navigate("/confirm") : navigate("/");

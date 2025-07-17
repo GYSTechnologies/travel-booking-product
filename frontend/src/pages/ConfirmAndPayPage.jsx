@@ -22,11 +22,17 @@ const ConfirmAndPayPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [rooms, setRooms] = useState(bookingData?.rooms || 1);
 
+  const [selectedSlot, setSelectedSlot] = useState(null);
+
   const rawCheckIn =
     bookingData?.type === "service"
-      ? `${bookingData.date}T${bookingData.time || "00:00"}`
+      ? `${bookingData?.date || ""}T${
+          bookingData?.time?.split(" - ")[0] || "12:00"
+        }`
       : bookingData?.type === "experience"
-      ? `${bookingData.date}T12:00`
+      ? `${bookingData?.date || ""}T${
+          bookingData?.time?.split(" - ")[0] || "12:00"
+        }`
       : bookingData?.checkIn;
 
   const rawCheckOut =
@@ -68,6 +74,25 @@ const ConfirmAndPayPage = () => {
     fetchItem();
   }, [bookingData, navigate, type]);
 
+  useEffect(() => {
+    if (
+      (type === "service" || type === "experience") &&
+      item?.slots?.length &&
+      checkIn
+    ) {
+      const selectedTime = checkIn.split("T")[1]?.slice(0, 5);
+      const matchedSlot = item.slots.find(
+        (slot) => slot.startTime === selectedTime
+      );
+
+      if (matchedSlot) {
+        setSelectedSlot(matchedSlot);
+      } else {
+        setSelectedSlot(null);
+      }
+    }
+  }, [checkIn, item]);
+
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
       const script = document.createElement("script");
@@ -87,8 +112,8 @@ const ConfirmAndPayPage = () => {
 
   const basePrice =
     type === "hotel"
-      ? item?.pricePerNight * rooms * nights
-      : item?.pricePerHead * guests;
+      ? (item?.pricePerNight || 0) * rooms * nights
+      : (item?.pricePerHead || 0) * guests;
 
   const serviceFee = Math.round(basePrice * 0.1);
   const taxes = Math.round(basePrice * 0.12);
@@ -103,6 +128,19 @@ const ConfirmAndPayPage = () => {
       return;
     }
 
+    if (type === "hotel") {
+      const availabilityRes = await axios.get(
+        `http://localhost:4000/api/host/hotel-detail/${bookingData.hotelId}?checkIn=${checkIn}&checkOut=${checkOut}`
+      );
+
+      const available = availabilityRes.data.availableRooms;
+      if (rooms > available) {
+        alert(`Only ${available} rooms available for selected dates.`);
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const orderRes = await axios.post(
         "http://localhost:4000/api/payment/create-order",
@@ -112,8 +150,18 @@ const ConfirmAndPayPage = () => {
 
       const order = orderRes.data;
 
-      const datePart = checkIn?.split("T")[0]; 
-      const timePart = checkIn?.split("T")[1]?.slice(0, 5); 
+      const datePart = checkIn?.split("T")[0];
+      const timePart = checkIn?.split("T")[1]?.slice(0, 5);
+
+      let selectedSlotTime = null;
+      if (
+        (type === "service" || type === "experience") &&
+        item?.slots?.length
+      ) {
+        selectedSlotTime = item.slots.find(
+          (slot) => slot.startTime === timePart
+        );
+      }
 
       const bookingDetails = {
         ...bookingData,
@@ -134,10 +182,21 @@ const ConfirmAndPayPage = () => {
         ...(type === "service" || type === "experience"
           ? {
               date: datePart,
-              time: type === "service" ? timePart : undefined,
+              startTime: timePart,
+              endTime: selectedSlotTime?.endTime || null,
             }
           : {}),
       };
+
+      if (type === "service") {
+        if (!checkIn || isNaN(new Date(checkIn))) {
+          alert("Please select a valid date and time for your booking.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      console.log("Final bookingDetails", bookingDetails);
 
       const options = {
         key: "rzp_test_BfK6i6b0E5R9rg",
@@ -173,6 +232,13 @@ const ConfirmAndPayPage = () => {
       setLoading(false);
     }
   };
+
+  const getTodayDate = () => new Date().toISOString().split("T")[0];
+  const isInvalidDate =
+    !checkIn ||
+    isNaN(new Date(checkIn)) ||
+    (type !== "experience" && new Date(checkIn) < new Date(getTodayDate())) ||
+    (type === "hotel" && checkOut && new Date(checkOut) <= new Date(checkIn));
 
   if (!bookingData || !item)
     return (
@@ -261,7 +327,8 @@ const ConfirmAndPayPage = () => {
                         </label>
                         <input
                           type="date"
-                          value={checkIn?.split("T")[0]}
+                          min={getTodayDate()}
+                          value={checkIn?.split("T")[0] || getTodayDate()}
                           onChange={(e) => {
                             const timePart = checkIn?.split("T")[1] || "12:00";
                             setCheckIn(`${e.target.value}T${timePart}`);
@@ -276,41 +343,38 @@ const ConfirmAndPayPage = () => {
                           <Clock className="w-5 h-5 text-emerald-600" />
                           Time
                         </label>
-                        <input
-                          type="time"
-                          value={
-                            checkIn
-                              ? new Date(checkIn)
-                                  .toISOString()
-                                  .substring(11, 16)
-                              : "12:00"
-                          }
-                          onChange={(e) => {
-                            const datePart =
-                              checkIn?.split("T")[0] ||
-                              new Date().toISOString().split("T")[0];
-                            setCheckIn(`${datePart}T${e.target.value}`);
-                          }}
-                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
-                        />
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                            <Clock className="w-5 h-5 text-emerald-600" />
+                            Selected Slot
+                          </label>
+                          <div className="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-100 text-gray-700">
+                            {selectedSlot
+                              ? `${selectedSlot.startTime} - ${selectedSlot.endTime}`
+                              : "Not selected"}
+                          </div>
+                        </div>
                       </div>
                     </>
                   ) : type === "experience" ? (
                     <>
-                      {/* Experience - Only Date */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-gray-700">
                           <Clock className="w-5 h-5 text-emerald-600" />
-                          Date
-                        </label>
-                        <input
-                          type="date"
-                          value={checkIn?.split("T")[0]}
-                          onChange={(e) =>
-                            setCheckIn(`${e.target.value}T12:00`)
-                          }
-                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
-                        />
+                          <span className="text-sm font-medium">Date:</span>
+                          <span className="text-sm">
+                            {new Date(checkIn).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <Clock className="w-5 h-5 text-emerald-600" />
+                          <span className="text-sm font-medium">Time:</span>
+                          <span className="text-sm">
+                            {selectedSlot
+                              ? `${selectedSlot.startTime} - ${selectedSlot.endTime}`
+                              : "Not selected"}
+                          </span>
+                        </div>
                       </div>
                     </>
                   ) : (
@@ -323,6 +387,7 @@ const ConfirmAndPayPage = () => {
                         </label>
                         <input
                           type="date"
+                          min={getTodayDate()}
                           value={checkIn}
                           onChange={(e) => setCheckIn(e.target.value)}
                           className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
@@ -336,11 +401,22 @@ const ConfirmAndPayPage = () => {
                         </label>
                         <input
                           type="date"
+                          min={checkIn}
                           value={checkOut}
                           onChange={(e) => setCheckOut(e.target.value)}
                           className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                         />
                       </div>
+                      {new Date(checkIn) < new Date(getTodayDate()) && (
+                        <p className="text-sm text-red-600 -mt-4">
+                          Check-in date cannot be in the past.
+                        </p>
+                      )}
+                      {new Date(checkOut) <= new Date(checkIn) && (
+                        <p className="text-sm text-red-600 -mt-2">
+                          Check-out must be after check-in date.
+                        </p>
+                      )}
                     </>
                   )}
 
@@ -357,6 +433,14 @@ const ConfirmAndPayPage = () => {
                       className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                     />
                   </div>
+                  {(type === "service" || type === "experience") &&
+                    selectedSlot &&
+                    guests > selectedSlot.maxGuests && (
+                      <p className="text-sm text-red-600 -mt-2">
+                        This slot allows a maximum of {selectedSlot.maxGuests}{" "}
+                        guests. You have selected {guests}.
+                      </p>
+                    )}
 
                   {/* Rooms - only for hotel */}
                   {type === "hotel" && (
@@ -385,15 +469,16 @@ const ConfirmAndPayPage = () => {
                           {new Date(checkIn).toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-700">
-                        <Clock className="w-5 h-5 text-emerald-600" />
-                        <span className="text-sm font-medium">Time:</span>
-                        <span className="text-sm">
-                          {new Date(checkIn).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <Clock className="w-5 h-5 text-emerald-600" />
+                          Selected Slot
+                        </label>
+                        <div className="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-100 text-gray-700">
+                          {selectedSlot
+                            ? `${selectedSlot.startTime} - ${selectedSlot.endTime}`
+                            : "Not selected"}
+                        </div>
                       </div>
                     </div>
                   ) : type === "experience" ? (
@@ -403,6 +488,15 @@ const ConfirmAndPayPage = () => {
                         <span className="text-sm font-medium">Date:</span>
                         <span className="text-sm">
                           {new Date(checkIn).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Clock className="w-5 h-5 text-emerald-600" />
+                        <span className="text-sm font-medium">Time:</span>
+                        <span className="text-sm">
+                          {selectedSlot
+                            ? `${selectedSlot.startTime} - ${selectedSlot.endTime}`
+                            : "Not selected"}
                         </span>
                       </div>
                     </div>
@@ -469,7 +563,13 @@ const ConfirmAndPayPage = () => {
 
               <button
                 onClick={handlePayment}
-                disabled={loading}
+                disabled={
+                  loading ||
+                  isInvalidDate ||
+                  ((type === "service" || type === "experience") &&
+                    selectedSlot &&
+                    guests > selectedSlot.maxGuests)
+                }
                 className="w-full py-4 text-white font-semibold text-lg rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
@@ -531,7 +631,7 @@ const SummaryLine = ({ label, value, bold = false }) => (
   </div>
 );
 
-// Display-only detail
+// // Display-only detail
 const DisplayDetail = ({ label, value, icon }) => (
   <div className="flex items-center gap-2 text-gray-700">
     <span className="w-4 h-4 text-emerald-600">{icon}</span>

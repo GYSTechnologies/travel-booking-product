@@ -13,7 +13,7 @@ import serviceRoutes from './routes/service.routes.js';     // ✅ NEW
 import experienceRoutes from './routes/experience.routes.js'; // ✅ NEW
 import reviewRoutes from './routes/review.routes.js';
 import subscriptionRoutes from "./routes/subscription.routes.js";
-
+import superAdminRoutes from "./routes/superadmin.routes.js";
 
 connectDB();
 
@@ -31,9 +31,10 @@ app.use('/api/experiences', experienceRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews', reviewRoutes);
-
 app.use("/api/subscription", subscriptionRoutes);
 
+
+app.use("/api/super-admin", superAdminRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

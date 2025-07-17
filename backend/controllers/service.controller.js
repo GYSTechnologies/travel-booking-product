@@ -3,35 +3,39 @@ import Booking from "../models/booking.js";
 import mongoose from "mongoose";
 import Review from "../models/review.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
-import { bookingCancelledEmail, sendBookingCancelEmail } from "../utils/sendEmail.js";
+import {
+  bookingCancelledEmail,
+  sendBookingCancelEmail,
+} from "../utils/sendEmail.js";
 
-//user side...
+
 export const getAllServices = async (req, res) => {
   try {
     const { place = "", date, guests = 1, type } = req.query;
-
     const searchTerm = place.toLowerCase();
 
     // 📦 Prepare base query (match location, state, or category)
     let query = {
-      $or: [
+      status: "approved", // ✅ Only approved services
+    };
+
+    if (searchTerm !== "all") {
+      query.$or = [
         { state: { $regex: searchTerm, $options: "i" } },
         { location: { $regex: searchTerm, $options: "i" } },
         { category: { $regex: searchTerm, $options: "i" } },
-      ],
-    };
+      ];
+    }
 
     // 📂 Filter by type (category) if passed
     if (type) {
       query.category = { $regex: type.toLowerCase(), $options: "i" };
     }
 
-    // ✅ Get matched services
-    const services = await Service.find(
-      searchTerm === "all" ? {} : query
-    );
+    // ✅ Get matched approved services
+    const services = await Service.find(query);
 
-    // ⏳ If no date, return basic list
+    // ⏳ If no date, return unfiltered approved services
     if (!date) {
       return res.status(200).json(services);
     }
@@ -94,7 +98,6 @@ export const getServiceById = async (req, res) => {
   }
 };
 
-
 export const filterServicesByLocationOrCategory = async (req, res) => {
   try {
     const { location, category, state } = req.query;
@@ -117,12 +120,7 @@ export const filterServicesByLocationOrCategory = async (req, res) => {
   }
 };
 
-
-//HOST SIDE .....
-
-
-
-//POST -> create service
+//host side...
 export const createService = async (req, res) => {
   try {
     const {
@@ -133,11 +131,14 @@ export const createService = async (req, res) => {
       description,
       duration,
       pricePerHead,
-      maxGuests,
+
       aboutHost,
       highlights,
+      documentTypes,
+      slots,
     } = req.body;
 
+    // 🔒 Validate required fields
     if (
       !title ||
       !category ||
@@ -145,33 +146,114 @@ export const createService = async (req, res) => {
       !state ||
       !description ||
       !duration ||
-      !pricePerHead ||
-      !maxGuests
+      !pricePerHead
     ) {
       return res
         .status(400)
         .json({ message: "Please fill all required fields" });
     }
 
-    // ✅ Upload images to Cloudinary
-    let imageUrls = [];
-    if (req.files && req.files.length > 0) {
-      const uploadPromises = req.files.map((file) =>
-        uploadToCloudinary(file.path, "services")
-      );
-      const uploadedImages = await Promise.all(uploadPromises);
-      imageUrls = uploadedImages.map((img) => img.secure_url);
-    } else {
+    // 🧠 Parse and validate slots
+    let parsedSlots = [];
+    if (!slots) {
+      return res.status(400).json({ message: "Slots are required" });
+    }
+
+    try {
+      parsedSlots = Array.isArray(slots)
+        ? slots
+        : typeof slots === "string"
+        ? JSON.parse(slots)
+        : [];
+
+      if (parsedSlots.length === 0) {
+        return res
+          .status(400)
+          .json({ message: "At least one slot is required" });
+      }
+
+      // ⏳ Calculate endTime from duration
+      function calculateEndTime(startTime, duration) {
+        const [hours, minutes] = startTime.split(":").map(Number);
+        const durationInMinutes = Math.round(parseFloat(duration) * 60);
+        const startDate = new Date(2000, 0, 1, hours, minutes);
+        const endDate = new Date(
+          startDate.getTime() + durationInMinutes * 60000
+        );
+        const endHours = String(endDate.getHours()).padStart(2, "0");
+        const endMinutes = String(endDate.getMinutes()).padStart(2, "0");
+        return `${endHours}:${endMinutes}`;
+      }
+
+      var transformedSlots = [];
+
+      for (const slot of parsedSlots) {
+        if (!slot.time || !slot.maxGuests) {
+          return res.status(400).json({
+            message: "Each slot must include time and maxGuests",
+          });
+        }
+
+        const endTime = calculateEndTime(slot.time, duration);
+        transformedSlots.push({
+          startTime: slot.time,
+          endTime,
+          maxGuests: Number(slot.maxGuests),
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({ message: "Invalid slots format" });
+    }
+
+    // 📸 Upload Images
+    const imageFiles = req.files?.images || [];
+    if (imageFiles.length === 0) {
       return res
         .status(400)
         .json({ message: "At least one image is required" });
     }
 
-    // ✅ Parse highlights as array
-    const parsedHighlights = Array.isArray(highlights)
-      ? highlights
-      : highlights?.split(",").map((h) => h.trim());
+    const uploadImagePromises = imageFiles.map((file) =>
+      uploadToCloudinary(file.path, "services")
+    );
+    const uploadedImages = await Promise.all(uploadImagePromises);
+    const imageUrls = uploadedImages.map((img) => img.secure_url);
 
+    // 📄 Upload Documents
+    const docFiles = req.files?.documents || [];
+    const docTypes = Array.isArray(documentTypes)
+      ? documentTypes
+      : documentTypes
+      ? [documentTypes]
+      : [];
+
+    let docUrls = [];
+    if (docFiles.length > 0 && docTypes.length === docFiles.length) {
+      for (let i = 0; i < docFiles.length; i++) {
+        const cloudRes = await uploadToCloudinary(
+          docFiles[i].path,
+          "service_docs"
+        );
+        docUrls.push({
+          docType: docTypes[i],
+          url: cloudRes.secure_url,
+          status: "pending",
+          rejectionReason: "",
+        });
+      }
+    }
+
+    // ✨ Parse Highlights
+    const parsedHighlights = highlights
+      ? Array.isArray(highlights)
+        ? highlights
+        : highlights
+            .split(",")
+            .map((h) => h.trim())
+            .filter(Boolean)
+      : [];
+
+    // ✅ Create the Service
     const newService = await Service.create({
       host: req.user._id,
       title,
@@ -181,10 +263,13 @@ export const createService = async (req, res) => {
       description,
       duration,
       pricePerHead: Number(pricePerHead),
-      maxGuests: Number(maxGuests),
-      images: imageUrls,
       aboutHost,
       highlights: parsedHighlights,
+      images: imageUrls,
+      documents: docUrls,
+      slots: transformedSlots,
+      status: "pending",
+      rejectionReason: "",
     });
 
     res.status(201).json({
@@ -200,25 +285,10 @@ export const createService = async (req, res) => {
   }
 };
 
-//PUT ->service update...
+
 export const updateService = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // 1. Fetch service
-    const service = await Service.findById(id);
-    if (!service) {
-      return res.status(404).json({ message: "Service not found" });
-    }
-
-    // 2. Authorization check
-    if (service.host.toString() !== req.user._id.toString()) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to update this service" });
-    }
-
-    // 3. Extract fields
     const {
       title,
       category,
@@ -230,9 +300,100 @@ export const updateService = async (req, res) => {
       maxGuests,
       aboutHost,
       highlights,
+      existingImages,
+      documentTypes,
+      slots,
     } = req.body;
 
-    // 4. Update fields conditionally
+    const service = await Service.findById(id);
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    if (service.host.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Unauthorized access" });
+    }
+
+    // ✅ 1. Handle Images (retain + upload new)
+    let finalImages = [];
+
+    if (existingImages) {
+      finalImages =
+        typeof existingImages === "string"
+          ? [existingImages]
+          : [...existingImages];
+    }
+
+    const imageFiles = req.files?.images || [];
+    if (imageFiles.length > 0) {
+      const uploads = await Promise.all(
+        imageFiles.map((file) => uploadToCloudinary(file.path, "services"))
+      );
+      finalImages.push(...uploads.map((img) => img.secure_url));
+    }
+
+    service.images = finalImages;
+
+    // ✅ 2. Handle Documents (replace only if not approved)
+    if (documentTypes) {
+      const docTypes = Array.isArray(documentTypes)
+        ? documentTypes
+        : [documentTypes];
+      const docFiles = Object.values(req.files || {})
+        .flat()
+        .filter((f) => f.fieldname.startsWith("docFile"));
+
+      for (let i = 0; i < docFiles.length; i++) {
+        const docFile = docFiles[i];
+        const docType = docTypes[i] || "other";
+
+        const cloudRes = await uploadToCloudinary(docFile.path, "service_docs");
+
+        const existingDocIndex = service.documents.findIndex(
+          (doc) => doc.docType === docType
+        );
+
+        if (existingDocIndex !== -1) {
+          if (service.documents[existingDocIndex].status !== "approved") {
+            service.documents[existingDocIndex].url = cloudRes.secure_url;
+            service.documents[existingDocIndex].status = "pending";
+            service.documents[existingDocIndex].rejectionReason = "";
+          }
+        } else {
+          service.documents.push({
+            docType,
+            url: cloudRes.secure_url,
+            status: "pending",
+            rejectionReason: "",
+          });
+        }
+      }
+    }
+
+    // ✅ 3. Parse & update slots (if provided)
+    if (slots) {
+      try {
+        const parsedSlots = Array.isArray(slots)
+          ? slots
+          : typeof slots === "string"
+          ? JSON.parse(slots)
+          : [];
+
+        for (const slot of parsedSlots) {
+          if (!slot.startTime || !slot.endTime || !slot.maxGuests) {
+            return res.status(400).json({
+              message: "Each slot must have startTime, endTime, and maxGuests",
+            });
+          }
+        }
+
+        service.slots = parsedSlots;
+      } catch (err) {
+        return res.status(400).json({ message: "Invalid slots format" });
+      }
+    }
+
+    // ✅ 4. Update All Text Fields
     service.title = title || service.title;
     service.category = category || service.category;
     service.location = location || service.location;
@@ -240,31 +401,25 @@ export const updateService = async (req, res) => {
     service.description = description || service.description;
     service.duration = duration || service.duration;
     service.pricePerHead = pricePerHead || service.pricePerHead;
-    service.maxGuests = maxGuests || service.maxGuests;
     service.aboutHost = aboutHost || service.aboutHost;
-    service.highlights = highlights || service.highlights;
+    service.highlights = highlights
+      ? Array.isArray(highlights)
+        ? highlights
+        : highlights.split(",").map((h) => h.trim())
+      : service.highlights;
 
-    // 6. Optional image upload
-    if (req.files && req.files.length > 0) {
-      const uploadPromises = req.files.map((file) =>
-        uploadToCloudinary(file.path, "services")
-      );
-      const uploadedImages = await Promise.all(uploadPromises);
-      service.images = uploadedImages.map((img) => img.secure_url);
-    }
+    // ✅ Reset approval status
+    service.status = "pending";
+    service.rejectionReason = "";
 
-    // 7. Save and respond
     await service.save();
 
-    res.status(200).json({
-      message: "Service updated successfully",
-      service,
-    });
+    res.status(200).json({ message: "Service updated successfully", service });
   } catch (error) {
-    res.status(500).json({
-      message: "Failed to update service",
-      error: error.message,
-    });
+    console.error("Update Service Error:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to update service", error: error.message });
   }
 };
 
@@ -346,10 +501,14 @@ export const getServiceDashboardStats = async (req, res) => {
   }
 };
 
-//Get -> Single Services
+
+
 export const getSingleService = async (req, res) => {
   try {
-    const service = await Service.findById(req.params.id).populate(
+    const { id } = req.params;
+    const selectedDate = req.query.date; // e.g., "2025-07-17"
+
+    const service = await Service.findById(id).populate(
       "host",
       "username email profileImage"
     );
@@ -358,9 +517,48 @@ export const getSingleService = async (req, res) => {
       return res.status(404).json({ message: "Service not found." });
     }
 
+    let slotsWithAvailability = service.slots;
+
+    if (selectedDate) {
+      // Get all confirmed bookings for that date & service
+      const bookings = await Booking.find({
+        type: "service",
+        referenceId: id,
+        date: selectedDate,
+        status: "confirmed",
+      });
+
+      // Count booked guests per slot
+      const slotGuestMap = {}; // e.g., { "11:00-14:00": 6 }
+
+      for (let booking of bookings) {
+        const slotKey = `${booking.slot.startTime}-${booking.slot.endTime}`;
+        if (!slotGuestMap[slotKey]) {
+          slotGuestMap[slotKey] = 0;
+        }
+        slotGuestMap[slotKey] += booking.guests;
+      }
+
+      // Add availability flag to each slot
+      slotsWithAvailability = service.slots.map((slot) => {
+        const slotKey = `${slot.startTime}-${slot.endTime}`;
+        const bookedGuests = slotGuestMap[slotKey] || 0;
+        const isAvailable = bookedGuests < slot.maxGuests;
+
+        return {
+          ...slot.toObject(),
+          bookedGuests,
+          isAvailable,
+        };
+      });
+    }
+
     res.status(200).json({
       message: "Service fetched successfully.",
-      data: service,
+      data: {
+        ...service.toObject(),
+        slots: slotsWithAvailability,
+      },
     });
   } catch (error) {
     console.error("Get Single Service Error:", error.message);
@@ -469,7 +667,6 @@ export const getServiceReviews = async (req, res) => {
   }
 };
 
-
 export const cancelServiceBookingByHost = async (req, res) => {
   try {
     const { reason = "" } = req.body;
@@ -478,7 +675,7 @@ export const cancelServiceBookingByHost = async (req, res) => {
       .populate("user", "email username")
       .populate({
         path: "referenceId",
-        model: "Service", 
+        model: "Service",
       });
 
     if (!booking || booking.type !== "service") {
@@ -619,5 +816,52 @@ export const getServiceBookings = async (req, res) => {
   } catch (error) {
     console.error("Service Bookings Error:", error.message);
     res.status(500).json({ message: "Error fetching service bookings." });
+  }
+};
+
+
+export const getAvailableSlotsForService = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({ message: "Date is required" });
+    }
+
+    const service = await Service.findById(id);
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    // Get all bookings for that date
+    const bookings = await Booking.find({
+      referenceId: id,
+      type: "service",
+      date,
+    });
+
+    // Create a map: "startTime - endTime" -> total booked guests
+    const slotMap = {};
+    bookings.forEach((b) => {
+      const timeKey = `${b.slotBooking?.startTime} - ${b.slotBooking?.endTime}`;
+      if (!slotMap[timeKey]) slotMap[timeKey] = 0;
+      slotMap[timeKey] += b.guests || 0;
+    });
+
+    // Final output: each slot with bookedGuests
+    const slotsWithAvailability = service.slots.map((slot) => {
+      const timeKey = `${slot.startTime} - ${slot.endTime}`;
+      return {
+        time: timeKey,
+        maxGuests: slot.maxGuests,
+        bookedGuests: slotMap[timeKey] || 0,
+      };
+    });
+
+    res.json(slotsWithAvailability);
+  } catch (err) {
+    console.error("Failed to fetch slots:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

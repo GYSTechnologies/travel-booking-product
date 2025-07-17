@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 
@@ -45,10 +44,23 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
+    // <AuthContext.Provider
+    // //   value={{
+    // //     user,
+    // //     token,
+    // //     login,
+    // //     logout,
+    // //     bookingData: bookingDataState,
+    // //     setBookingData,
+    // //     loading,
+    // //   }}
+    // // >
     <AuthContext.Provider
       value={{
         user,
         token,
+        setUser,
+        setToken,
         login,
         logout,
         bookingData: bookingDataState,

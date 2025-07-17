@@ -3,6 +3,7 @@ import { protect } from "../middlewares/authMiddleware.js";
 import { isHost } from "../middlewares/isHost.js";
 import upload from "../middlewares/uploadMiddleware.js";
 import { checkActiveSubscription } from "../middlewares/checkSubscription.js";
+import { checkHostApproval } from "../middlewares/checkHostApproval.js";
 
 import {
   createHotel,
@@ -16,6 +17,7 @@ import {
   getHostHotels,
   getAllHotels,
   getHotelById,
+  getHotelAvailability
 } from "../controllers/hotel.controller.js";
 
 const router = express.Router();
@@ -25,21 +27,30 @@ const router = express.Router();
 // Get all public hotels (for listing/search)
 router.get("/all-hotels", getAllHotels);
 
-
 // ================= HOST SIDE ROUTES =================
-
 // Create a new hotel listing
 router.post(
   "/hotel-create",
   protect,
   checkActiveSubscription,
   isHost,
-  upload.array("images"),
+  checkHostApproval, // ✅ added
+  upload.fields([
+    { name: "images", maxCount: 5 },
+    { name: "documents", maxCount: 3 },
+  ]),
   createHotel
 );
 
 // Get all hotels owned by the logged-in host
-router.get("/hotels", protect, checkActiveSubscription, isHost, getHostHotels);
+router.get(
+  "/hotels",
+  protect,
+  checkActiveSubscription,
+  isHost,
+  checkHostApproval, // ✅ added
+  getHostHotels
+);
 
 // Dashboard Home Overview stats
 router.get(
@@ -47,6 +58,7 @@ router.get(
   protect,
   checkActiveSubscription,
   isHost,
+  checkHostApproval, // ✅ added
   getHotelDashboardStats
 );
 
@@ -56,6 +68,7 @@ router.get(
   protect,
   checkActiveSubscription,
   isHost,
+  checkHostApproval, // ✅ added
   getHotelBookingsAndEarnings
 );
 
@@ -65,25 +78,31 @@ router.get(
   protect,
   checkActiveSubscription,
   isHost,
+  checkHostApproval, // ✅ added
   getHotelReviews
 );
 
-//booking cancel routes
+// Booking cancel route by host
 router.put(
   "/bookings/:id/cancel-by-host",
   protect,
   checkActiveSubscription,
   isHost,
+  checkHostApproval, // ✅ added
   cancelHotelBookingByHost
 );
 
-// Update  hotel
+// Update hotel
 router.put(
   "/hotel-update/:id",
   protect,
   checkActiveSubscription,
   isHost,
-  upload.array("images"),
+  checkHostApproval, // ✅ added
+  upload.fields([
+    { name: "images", maxCount: 5 },
+    { name: "docFile", maxCount: 5 }, // ✅ for document images (optional)
+  ]),
   updateHotel
 );
 
@@ -93,14 +112,24 @@ router.delete(
   protect,
   checkActiveSubscription,
   isHost,
+  checkHostApproval, // ✅ added
   deleteHotel
 );
 
 // Get a single hotel by ID (for editing)
-router.get("/:id", protect, checkActiveSubscription, isHost, getSingleHotel);
+router.get(
+  "/:id",
+  protect,
+  checkActiveSubscription,
+  isHost,
+  checkHostApproval, // ✅ added
+  getSingleHotel
+);
 
-
-//Get hotel detail by ID
+// Get hotel detail by ID (🟢 user-side route – no middleware)
 router.get("/hotel-detail/:id", getHotelById);
+
+router.get("/:id/availability", getHotelAvailability);
+
 
 export default router;

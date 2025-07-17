@@ -5,7 +5,6 @@ import { ReactSortable } from "react-sortablejs";
 
 const getApiUrls = (type, editMode, id) => {
   const base = "http://localhost:4000/api";
-
   if (type === "hotel") {
     return {
       url: editMode
@@ -30,7 +29,6 @@ const getApiUrls = (type, editMode, id) => {
       key: "experience",
     };
   }
-
   return { url: "", key: "" };
 };
 
@@ -68,6 +66,19 @@ const INDIAN_STATES = [
 
 const SERVICE_CATEGORIES = ["photography", "spa", "food", "trainer", "dancer"];
 
+const REQUIRED_DOCS = {
+  hotel: ["gst", "business license", "fire safety certificate"],
+  services: {
+    food: ["food license"],
+    trainer: ["trainer license"],
+    default: ["service proof"],
+  },
+  experiences: {
+    trekking: ["trekking permit"],
+    tour: ["tour id"],
+    default: ["experience proof"],
+  },
+};
 
 const AddListingModal = ({
   token = "",
@@ -96,86 +107,10 @@ const AddListingModal = ({
 
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [amenitiesList, setAmenitiesList] = useState([]);
-
-  const handleAmenityKeyDown = (e) => {
-    if (["Enter", ","].includes(e.key)) {
-      e.preventDefault();
-      const trimmed = e.target.value.trim();
-      if (trimmed && !amenitiesList.includes(trimmed)) {
-        const capitalized = capitalizeWords(trimmed);
-
-        setAmenitiesList([...amenitiesList, capitalized]);
-        setFormData({
-          ...formData,
-          amenities: [...amenitiesList, capitalized],
-        });
-
-        e.target.value = "";
-      }
-    }
-  };
-
-  // ✅ Helper function
-  const capitalizeWords = (str) =>
-    str.replace(/\b\w/g, (char) => char.toUpperCase());
-
-  const removeAmenity = (index) => {
-    const updated = amenitiesList.filter((_, i) => i !== index);
-    setAmenitiesList(updated);
-    setFormData({ ...formData, amenities: updated });
-  };
-
-  useEffect(() => {
-    if (editMode && initialData) {
-      setFormData({
-        title: initialData.title || "",
-        description: initialData.description || "",
-        location: initialData.location || "",
-        state: initialData.state || "",
-        area: initialData.area || "",
-        pricePerNight: initialData.pricePerNight || "",
-        availableRooms: initialData.availableRooms || "",
-        pricePerHead: initialData.pricePerHead || "",
-        maxGuests: initialData.maxGuests || "",
-        duration: initialData.duration || "",
-        category: initialData.category || "",
-        amenities: initialData.amenities || [],
-        aboutHost: initialData.aboutHost || "",
-        highlights: (initialData.highlights || []).join(","), // highlights is okay
-      });
-
-      // ✅ Pre-fill tag view
-      if (initialData.amenities?.length) {
-        setAmenitiesList(initialData.amenities);
-      }
-
-      if (initialData.images?.length) {
-        setImages(initialData.images.map((url) => ({ url, file: null })));
-      }
-    }
-  }, [editMode, initialData]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length + images.length > 5) {
-      toast.error("You must upload exactly 5 images.");
-      return;
-    }
-
-    const newImages = files.map((file) => ({
-      file,
-      url: URL.createObjectURL(file),
-    }));
-
-    setImages((prev) => [...prev, ...newImages].slice(0, 5));
-  };
+  const [documentFiles, setDocumentFiles] = useState({});
+  const [approvedDocsMap, setApprovedDocsMap] = useState({});
+  const [slots, setSlots] = useState([{ time: "", maxGuests: "" }]);
 
   const handleRemoveImage = (index) => {
     const updated = [...images];
@@ -183,16 +118,99 @@ const AddListingModal = ({
     setImages(updated);
   };
 
+  const getRequiredDocuments = () => {
+    if (type === "hotel") return REQUIRED_DOCS.hotel;
+    const cat = formData.category?.toLowerCase();
+    if (type === "services")
+      return REQUIRED_DOCS.services[cat] || REQUIRED_DOCS.services.default;
+    if (type === "experiences")
+      return (
+        REQUIRED_DOCS.experiences[cat] || REQUIRED_DOCS.experiences.default
+      );
+    return [];
+  };
+
+  const handleDocumentChange = (e, docType) => {
+    setDocumentFiles((prev) => ({ ...prev, [docType]: e.target.files[0] }));
+  };
+
+  const handleAmenityKeyDown = (e) => {
+    if (["Enter", ","].includes(e.key)) {
+      e.preventDefault();
+      const trimmed = e.target.value.trim();
+      if (trimmed && !amenitiesList.includes(trimmed)) {
+        const capitalized = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+        const newList = [...amenitiesList, capitalized];
+        setAmenitiesList(newList);
+        setFormData((prev) => ({ ...prev, amenities: newList }));
+        e.target.value = "";
+      }
+    }
+  };
+
+  const removeAmenity = (index) => {
+    const updated = amenitiesList.filter((_, i) => i !== index);
+    setAmenitiesList(updated);
+    setFormData((prev) => ({ ...prev, amenities: updated }));
+  };
+
+  useEffect(() => {
+    if (editMode && initialData) {
+      setFormData({
+        ...formData,
+        ...initialData,
+        highlights: (initialData.highlights || []).join(","),
+      });
+      setAmenitiesList(initialData.amenities || []);
+      if (initialData.images) {
+        setImages(initialData.images.map((url) => ({ url, file: null })));
+      }
+      const approvedMap = {};
+      for (const doc of initialData.documents || []) {
+        if (doc.status === "approved") {
+          approvedMap[doc.docType] = true;
+        }
+      }
+
+      setApprovedDocsMap(approvedMap);
+      if (
+        (type === "services" || type === "experiences") &&
+        initialData.slots
+      ) {
+        setSlots(initialData.slots);
+      }
+    }
+  }, [editMode, initialData]);
+
+  const shouldShowDocumentSection =
+    !editMode ||
+    (initialData.status !== "approved" &&
+      getRequiredDocuments().some((doc) => approvedDocsMap[doc] !== true));
+
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + images.length > 5)
+      return toast.error("Exactly 5 images required.");
+    const newImgs = files.map((file) => ({
+      file,
+      url: URL.createObjectURL(file),
+    }));
+    setImages((prev) => [...prev, ...newImgs].slice(0, 5));
+  };
+
   const handleSubmit = async () => {
     if (images.length !== 5) {
-      toast.error("Exactly 5 images required.");
-      return;
+      return toast.error("Exactly 5 images are required.");
     }
 
     setLoading(true);
     const form = new FormData();
 
-    const fieldsMap = {
+    // Include common fields based on type
+    const activeFields = {
       hotel: [
         "title",
         "description",
@@ -211,10 +229,11 @@ const AddListingModal = ({
         "description",
         "duration",
         "pricePerHead",
-        "maxGuests",
+
         "highlights",
         "aboutHost",
       ],
+
       services: [
         "title",
         "category",
@@ -223,23 +242,51 @@ const AddListingModal = ({
         "description",
         "duration",
         "pricePerHead",
-        "maxGuests",
         "highlights",
         "aboutHost",
       ],
-    };
+    }[type];
 
-    const activeFields = fieldsMap[type] || [];
     activeFields.forEach((key) => form.append(key, formData[key]));
 
+    if (type === "services" || type === "experiences") {
+      slots.forEach((slot, i) => {
+        form.append(`slots[${i}][time]`, slot.time);
+        form.append(`slots[${i}][maxGuests]`, slot.maxGuests);
+      });
+    }
+
+    // ✅ Append new image files
     images.forEach((img) => {
       if (img.file) {
         form.append("images", img.file);
       }
     });
 
-    const { url, key } = getApiUrls(type, editMode, initialData._id);
+    // ✅ Append existing image URLs (in edit mode only)
+    if (editMode) {
+      const existingImageUrls = images
+        .filter((img) => !img.file && img.url)
+        .map((img) => img.url);
+      existingImageUrls.forEach((url) => form.append("existingImages", url));
+    }
 
+    // ✅ Append document files (skip approved)
+    const docTypes = getRequiredDocuments();
+    const docTypeList = [];
+
+    for (const docType of docTypes) {
+      const file = documentFiles[docType];
+      // 👇 Only send if not approved
+      if (file && !approvedDocsMap[docType]) {
+        form.append(editMode ? "docFile" : "documents", file); // ✅ no dynamic fieldname
+        docTypeList.push(docType); // ✅ will match backend docTypes
+      }
+    }
+    form.append("documentTypes", docTypeList);
+
+    // ✅ Submit to API
+    const { url, key } = getApiUrls(type, editMode, initialData._id);
     try {
       const res = await axios[editMode ? "put" : "post"](url, form, {
         headers: {
@@ -247,24 +294,15 @@ const AddListingModal = ({
           "Content-Type": "multipart/form-data",
         },
       });
-
-      toast.success(`${type} ${editMode ? "updated" : "added"}!`);
+      toast.success(`${type} ${editMode ? "updated" : "created"} successfully`);
       onSuccess(res.data[key]);
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error(`Failed to ${editMode ? "update" : "add"} ${type}`);
+      toast.error("Something went wrong.");
     } finally {
       setLoading(false);
     }
-  };
-
-  const moveImage = (fromIndex, toIndex) => {
-    if (toIndex < 0 || toIndex >= images.length) return;
-    const updated = [...images];
-    const [moved] = updated.splice(fromIndex, 1);
-    updated.splice(toIndex, 0, moved);
-    setImages(updated);
   };
 
   return (
@@ -416,16 +454,7 @@ const AddListingModal = ({
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg"
                 />
               </div>
-              <div>
-                <label className="font-medium">Max Guests</label>
-                <input
-                  name="maxGuests"
-                  type="number"
-                  value={formData.maxGuests}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-                />
-              </div>
+
               <div className="md:col-span-2">
                 <label className="font-medium">Duration</label>
                 <input
@@ -436,6 +465,51 @@ const AddListingModal = ({
                   placeholder="e.g. 2h, 3 days"
                 />
               </div>
+            </div>
+          )}
+          {(type === "services" || type === "experiences") && (
+            <div>
+              <label className="font-medium block mb-2">
+                {type === "services" ? "Service" : "Experience"} Time Slots
+              </label>
+              {slots.map((slot, index) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center mb-2"
+                >
+                  <input
+                    type="time"
+                    value={slot.time}
+                    onChange={(e) => {
+                      const updated = [...slots];
+                      updated[index].time = e.target.value;
+                      setSlots(updated);
+                    }}
+                    className="border px-3 py-2 rounded-md"
+                  />
+                  <input
+                    type="number"
+                    min={1}
+                    value={slot.maxGuests}
+                    onChange={(e) => {
+                      const updated = [...slots];
+                      updated[index].maxGuests = e.target.value;
+                      setSlots(updated);
+                    }}
+                    className="border px-3 py-2 rounded-md"
+                    placeholder="Max Guests for this slot"
+                  />
+                </div>
+              ))}
+              <button
+                onClick={() =>
+                  setSlots([...slots, { time: "", maxGuests: "" }])
+                }
+                type="button"
+                className="mt-2 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+              >
+                + Add Slot
+              </button>
             </div>
           )}
 
@@ -568,29 +642,75 @@ const AddListingModal = ({
             </ReactSortable>
           </div>
 
-          {/* Buttons */}
-          <div className="flex gap-4 pt-4 border-t">
+          {/* ✅ Document Upload Section */}
+          {shouldShowDocumentSection && (
+            <div>
+              <label className="block font-semibold mb-2">
+                Required Documents
+              </label>
+              <div className="space-y-3">
+                {getRequiredDocuments().map((docType, i) => {
+                  // ✅ In editMode: skip rendering for approved docs
+                  if (editMode && approvedDocsMap[docType] === true)
+                    return null;
+
+                  return (
+                    <div
+                      key={i}
+                      className="flex flex-col md:flex-row md:items-center gap-4"
+                    >
+                      <label className="capitalize font-medium w-40">
+                        {docType}
+                      </label>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleDocumentChange(e, docType)}
+                        className="border px-3 py-2 rounded-md w-full"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Submit Buttons */}
+          <div className="flex flex-col md:flex-row gap-4 pt-4 items-start md:items-center">
             <button
               onClick={handleSubmit}
-              disabled={loading}
-              className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-3 rounded-lg font-medium hover:from-emerald-700 hover:to-teal-700 transition-all"
+              disabled={loading || images.length !== 5}
+              className={`px-6 py-3 rounded-lg text-white font-semibold transition ${
+                images.length !== 5
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-emerald-600 hover:bg-emerald-700"
+              }`}
             >
               {loading
-                ? editMode
-                  ? "Updating..."
-                  : "Adding..."
-                : `${editMode ? "Update" : "Add"} ${type}`}
+                ? "Submitting..."
+                : editMode
+                ? `Update ${type}`
+                : `Add ${type}`}
             </button>
+
             <button
               onClick={onClose}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              className="border border-gray-300 px-6 py-3 rounded-lg"
             >
               Cancel
             </button>
+
+            {/* Error message for image count */}
+            {images.length !== 5 && (
+              <p className="text-red-600 text-sm mt-2 md:mt-0">
+                Exactly 5 images are required to proceed
+              </p>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
 };
+
 export default AddListingModal;

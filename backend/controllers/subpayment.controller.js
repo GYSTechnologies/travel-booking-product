@@ -4,8 +4,6 @@ import { addMonths } from "date-fns";
 import { isValidRazorpaySignature } from "../utils/verifyRazorpaySignature.js";
 import { sendSubscriptionConfirmationEmail } from "../utils/sendEmail.js";
 
-
-
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -44,7 +42,6 @@ export const createSubPaymentOrder = async (req, res) => {
 };
 
 
-
 export const verifySubscriptionPayment = async (req, res) => {
   try {
     const {
@@ -57,11 +54,17 @@ export const verifySubscriptionPayment = async (req, res) => {
 
     const userId = req.user._id;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !plan || !email) {
+    if (
+      !razorpay_order_id ||
+      !razorpay_payment_id ||
+      !razorpay_signature ||
+      !plan ||
+      !email
+    ) {
       return res.status(400).json({ message: "Missing payment or user info" });
     }
 
-    // Verify Signature
+    // ✅ Verify Razorpay Signature
     const isValid = isValidRazorpaySignature(
       razorpay_order_id,
       razorpay_payment_id,
@@ -73,7 +76,7 @@ export const verifySubscriptionPayment = async (req, res) => {
       return res.status(400).json({ message: "Invalid Razorpay signature" });
     }
 
-    // Duration and Pricing
+    // ✅ Plan Map
     const planMap = {
       "1month": { duration: addMonths(new Date(), 1), price: 299 },
       "6months": { duration: addMonths(new Date(), 6), price: 1399 },
@@ -83,7 +86,7 @@ export const verifySubscriptionPayment = async (req, res) => {
     const selected = planMap[plan];
     if (!selected) return res.status(400).json({ message: "Invalid plan" });
 
-    //  Upsert Subscription
+    // ✅ Upsert Subscription
     const newSubscription = await Subscription.findOneAndUpdate(
       { host: userId },
       {
@@ -97,7 +100,12 @@ export const verifySubscriptionPayment = async (req, res) => {
       { upsert: true, new: true }
     );
 
-    //  Send Email
+    // ✅ Update user's `hasActiveSubscription` flag to true
+    await User.findByIdAndUpdate(userId, {
+      hasActiveSubscription: true,
+    });
+
+    // ✅ Send confirmation email
     await sendSubscriptionConfirmationEmail(email, {
       plan,
       endDate: selected.duration,
@@ -110,6 +118,8 @@ export const verifySubscriptionPayment = async (req, res) => {
     });
   } catch (err) {
     console.error("Subscription verification error", err);
-    res.status(500).json({ message: "Payment verification failed", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Payment verification failed", error: err.message });
   }
 };

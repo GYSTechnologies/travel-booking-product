@@ -3,32 +3,37 @@ import Booking from "../models/booking.js";
 import Review from "../models/review.js";
 import User from "../models/user.js";
 import Razorpay from "razorpay";
+import dayjs from "dayjs";
+
 import {
   bookingCancelledEmail,
   EarningsReportEmail,
 } from "../utils/sendEmail.js";
 
 import { uploadToCloudinary } from "../utils/cloudinary.js";
+import { releaseHotelRooms } from "../utils/bookingCancel.js";
 
 //user side only
+
 export const getAllHotels = async (req, res) => {
   try {
     const { place, checkIn, checkOut, guests = 1 } = req.query;
 
-    if (!place || place.toLowerCase() === "all") {
-      const allHotels = await Hotel.find();
-      return res.status(200).json(allHotels);
-    }
-    // Search hotels by place — matching state, area or location
-    const hotels = await Hotel.find({
-      $or: [
+    const hotelQuery = {
+      status: "approved", // ✅ show only approved hotels
+    };
+
+    if (place && place.toLowerCase() !== "all") {
+      hotelQuery.$or = [
         { state: { $regex: place, $options: "i" } },
         { area: { $regex: place, $options: "i" } },
         { location: { $regex: place, $options: "i" } },
-      ],
-    });
+      ];
+    }
 
-    // If no date provided, return unfiltered list
+    const hotels = await Hotel.find(hotelQuery);
+
+    // If no dates given, just return hotels directly
     if (!checkIn || !checkOut) {
       return res.status(200).json(hotels);
     }
@@ -36,7 +41,6 @@ export const getAllHotels = async (req, res) => {
     const filteredHotels = [];
 
     for (const hotel of hotels) {
-      // Get bookings in selected date range
       const overlappingBookings = await Booking.find({
         referenceId: hotel._id,
         type: "hotel",
@@ -68,6 +72,7 @@ export const getAllHotels = async (req, res) => {
   }
 };
 
+
 export const getHotelById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -82,6 +87,7 @@ export const getHotelById = async (req, res) => {
       return res.status(404).json({ message: "Hotel not found" });
     }
 
+    // 🟡 No date range provided — return as-is
     if (!checkIn || !checkOut) {
       return res.status(200).json({
         ...hotel.toObject(),
@@ -90,23 +96,23 @@ export const getHotelById = async (req, res) => {
       });
     }
 
-    //Check overlapping bookings
-    const bookings = await Booking.find({
-      referenceId: hotel._id,
-      type: "hotel",
-      $or: [
-        {
-          checkIn: { $lt: new Date(checkOut) },
-          checkOut: { $gt: new Date(checkIn) },
-        },
-      ],
-    });
+    const nights = dayjs(checkOut).diff(dayjs(checkIn), "day");
+    let maxBookedRooms = 0;
 
-    const alreadyBookedRooms = bookings.reduce(
-      (total, b) => total + b.rooms,
-      0
-    );
-    const availableRooms = hotel.availableRooms - alreadyBookedRooms;
+    const hotelAvailability = hotel.availability || []; // ✅ fallback
+
+    for (let i = 0; i < nights; i++) {
+      const date = dayjs(checkIn).add(i, "day").format("YYYY-MM-DD");
+      const availabilityRecord = hotelAvailability.find((d) => d.date === date);
+      if (availabilityRecord) {
+        maxBookedRooms = Math.max(
+          maxBookedRooms,
+          availabilityRecord.bookedRooms
+        );
+      }
+    }
+
+    const availableRooms = hotel.availableRooms - maxBookedRooms;
 
     res.status(200).json({
       ...hotel.toObject(),
@@ -125,7 +131,6 @@ export const getHotelById = async (req, res) => {
 
 //host side
 
-//create hotel
 export const createHotel = async (req, res) => {
   const {
     title,
@@ -136,19 +141,41 @@ export const createHotel = async (req, res) => {
     pricePerNight,
     availableRooms,
     amenities,
+    documentTypes, // 👈 from frontend (["gst", "license", ...])
   } = req.body;
 
   try {
+    // ✅ Upload hotel images
+    // ✅ Upload hotel images
     let imageUrls = [];
+    const imageFiles = req.files?.images || [];
 
-    if (req.files && req.files.length > 0) {
-      const uploadPromises = req.files.map((file) =>
+    if (imageFiles.length > 0) {
+      const uploadPromises = imageFiles.map((file) =>
         uploadToCloudinary(file.path, "hotels")
       );
       const imageResults = await Promise.all(uploadPromises);
       imageUrls = imageResults.map((img) => img.secure_url);
     }
 
+    // ✅ Upload documents
+    let uploadedDocs = [];
+    const docFiles = req.files?.documents || [];
+
+    if (docFiles.length > 0) {
+      for (let i = 0; i < docFiles.length; i++) {
+        const file = docFiles[i];
+        const cloudRes = await uploadToCloudinary(file.path, "hotel_docs");
+        uploadedDocs.push({
+          docType: documentTypes[i] || "other",
+          url: cloudRes.secure_url,
+          status: "pending",
+          rejectionReason: "",
+        });
+      }
+    }
+
+    // ✅ Create hotel
     const newHotel = new Hotel({
       host: req.user._id,
       title,
@@ -156,24 +183,32 @@ export const createHotel = async (req, res) => {
       state,
       area,
       location,
-      pricePerNight,
-      availableRooms,
+      pricePerNight: Number(pricePerNight),
+      availableRooms: Number(availableRooms),
       amenities: amenities ? amenities.split(",") : [],
       images: imageUrls,
+
+      // 🔐 Admin approval logic
+      status: "pending",
+      rejectionReason: "",
+      documents: uploadedDocs,
     });
 
     await newHotel.save();
-    res
-      .status(201)
-      .json({ message: "Hotel created successfully", hotel: newHotel });
+
+    res.status(201).json({
+      message: "Hotel created successfully (awaiting admin approval)",
+      hotel: newHotel,
+    });
   } catch (error) {
+    console.error("CREATE HOTEL ERROR:", error);
     res
       .status(500)
       .json({ message: "Hotel creation failed", error: error.message });
   }
 };
 
-//update hotel info
+//hotel update
 export const updateHotel = async (req, res) => {
   const { id } = req.params;
   const {
@@ -185,27 +220,44 @@ export const updateHotel = async (req, res) => {
     pricePerNight,
     availableRooms,
     amenities,
+    documentTypes,
+    existingImages,
   } = req.body;
 
   try {
     const hotel = await Hotel.findById(id);
-
     if (!hotel) return res.status(404).json({ message: "Hotel not found" });
 
-    if (hotel.host.toString() !== req.user._id.toString())
+    if (hotel.host.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Unauthorized access" });
-
-    if (req.files && req.files.length > 0) {
-      const uploadPromises = req.files.map((file) =>
-        uploadToCloudinary(file.path, "hotels")
-      );
-      const uploadResults = await Promise.all(uploadPromises);
-       console.log(uploadResults, "uload reso");
-      hotel.images = uploadResults.map((res) => res.secure_url);
     }
 
-   
+    // ✅ 1. Handle Hotel Images (retain + new uploads)
+    let finalImages = [];
 
+    // Existing image URLs from frontend
+    if (existingImages) {
+      if (typeof existingImages === "string") {
+        finalImages = [existingImages];
+      } else {
+        finalImages = [...existingImages];
+      }
+    }
+
+    // New image uploads from "images" field
+    const imageFiles = req.files?.images || [];
+    if (imageFiles.length > 0) {
+      const uploadPromises = imageFiles.map((file) =>
+        uploadToCloudinary(file.path, "hotels")
+      );
+      const uploaded = await Promise.all(uploadPromises);
+      const newImageUrls = uploaded.map((img) => img.secure_url);
+      finalImages = [...finalImages, ...newImageUrls];
+    }
+
+    hotel.images = finalImages;
+
+    // ✅ 2. Update basic hotel fields
     hotel.title = title || hotel.title;
     hotel.description = description || hotel.description;
     hotel.state = state || hotel.state;
@@ -215,16 +267,54 @@ export const updateHotel = async (req, res) => {
     hotel.availableRooms = availableRooms || hotel.availableRooms;
     hotel.amenities = amenities ? amenities.split(",") : hotel.amenities;
 
+    // ✅ 3. Update documents if provided
+    if (documentTypes) {
+      const docTypes = Array.isArray(documentTypes)
+        ? documentTypes
+        : [documentTypes];
+
+      const allDocFiles = Object.values(req.files || {})
+        .flat()
+        .filter((f) => f.fieldname.startsWith("docFile"));
+
+      for (let i = 0; i < allDocFiles.length; i++) {
+        const docFile = allDocFiles[i];
+        const docType = docTypes[i] || "other";
+
+        const cloudRes = await uploadToCloudinary(docFile.path, "hotel_docs");
+
+        const existingDocIndex = hotel.documents.findIndex(
+          (doc) => doc.docType === docType
+        );
+
+        if (existingDocIndex !== -1) {
+          // Replace only if not approved
+          if (hotel.documents[existingDocIndex].status !== "approved") {
+            hotel.documents[existingDocIndex].url = cloudRes.secure_url;
+            hotel.documents[existingDocIndex].status = "pending";
+            hotel.documents[existingDocIndex].rejectionReason = "";
+          }
+        } else {
+          hotel.documents.push({
+            docType,
+            url: cloudRes.secure_url,
+            status: "pending",
+            rejectionReason: "",
+          });
+        }
+      }
+    }
+
     await hotel.save();
-    res.status(200).json({ message: "Hotel updated", hotel });
+    res.status(200).json({ message: "Hotel updated successfully", hotel });
   } catch (error) {
+    console.error("Update Hotel Error:", error);
     res
       .status(500)
       .json({ message: "Failed to update hotel", error: error.message });
   }
 };
 
-//get all hotels
 export const getHostHotels = async (req, res) => {
   try {
     const hotels = await Hotel.find({ host: req.user._id });
@@ -470,6 +560,13 @@ export const cancelHotelBookingByHost = async (req, res) => {
         amount: booking.totalPrice * 100,
       });
     }
+    // Release hotel availability
+    await releaseHotelRooms(
+      booking.referenceId._id,
+      booking.checkIn,
+      booking.checkOut,
+      booking.rooms
+    );
 
     // Send cancellation email
     await bookingCancelledEmail(booking.user.email, {
@@ -491,5 +588,33 @@ export const cancelHotelBookingByHost = async (req, res) => {
   } catch (error) {
     console.error("Cancel Booking Error:", error.message);
     res.status(500).json({ message: "Server error during cancellation." });
+  }
+};
+
+//hotel 
+export const getHotelAvailability = async (req, res) => {
+  const { id } = req.params;
+  const { checkIn, checkOut } = req.query;
+
+  try {
+    const hotel = await Hotel.findById(id);
+    if (!hotel) return res.status(404).json({ message: "Hotel not found" });
+
+    const bookings = await Booking.find({
+      type: "hotel",
+      referenceId: id,
+      $or: [{ checkIn: { $lt: checkOut }, checkOut: { $gt: checkIn } }],
+    });
+
+    let totalBookedRooms = 0;
+    bookings.forEach((b) => {
+      totalBookedRooms += b.rooms;
+    });
+
+    const availableRooms = Math.max(hotel.availableRooms - totalBookedRooms, 0);
+
+    res.status(200).json({ availableRooms });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to check availability" });
   }
 };

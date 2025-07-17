@@ -1,9 +1,10 @@
-
 import express from "express";
 import { protect } from "../middlewares/authMiddleware.js";
 import { isHost } from "../middlewares/isHost.js";
 import upload from "../middlewares/uploadMiddleware.js";
 import { checkActiveSubscription } from "../middlewares/checkSubscription.js";
+import { checkHostApproval } from "../middlewares/checkHostApproval.js";
+
 import {
   createService,
   updateService,
@@ -18,6 +19,7 @@ import {
   filterServicesByLocationOrCategory,
   getServiceBookingsAndEarnings,
   getHostServices,
+  getAvailableSlotsForService
 } from "../controllers/service.controller.js";
 
 const router = express.Router();
@@ -33,14 +35,17 @@ router.get("/search/filter", filterServicesByLocationOrCategory);
 
 // ================= HOST SIDE ROUTES =================
 
-
 // Create a new service
 router.post(
   "/create-service",
   protect,
   checkActiveSubscription,
   isHost,
-  upload.array("images"),
+  checkHostApproval, // ✅ added
+  upload.fields([
+    { name: "images", maxCount: 5 },
+    { name: "documents", maxCount: 3 },
+  ]),
   createService
 );
 
@@ -50,6 +55,7 @@ router.get(
   protect,
   checkActiveSubscription,
   isHost,
+  checkHostApproval, // ✅ added
   getHostServices
 );
 
@@ -59,6 +65,7 @@ router.get(
   protect,
   checkActiveSubscription,
   isHost,
+  checkHostApproval, // ✅ added
   getServiceDashboardStats
 );
 
@@ -68,6 +75,7 @@ router.get(
   protect,
   checkActiveSubscription,
   isHost,
+  checkHostApproval, // ✅ added
   getServiceBookingsAndEarnings
 );
 
@@ -77,6 +85,7 @@ router.get(
   protect,
   checkActiveSubscription,
   isHost,
+  checkHostApproval, // ✅ added
   getServiceReviews
 );
 
@@ -86,6 +95,7 @@ router.put(
   protect,
   checkActiveSubscription,
   isHost,
+  checkHostApproval, // ✅ added
   cancelServiceBookingByHost
 );
 
@@ -95,7 +105,11 @@ router.put(
   protect,
   checkActiveSubscription,
   isHost,
-  upload.array("images"),
+  checkHostApproval, // ✅ added
+  upload.fields([
+    { name: "images", maxCount: 5 },
+    { name: "docFile", maxCount: 5 }, // ✅ for document images (optional)
+  ]),
   updateService
 );
 
@@ -105,13 +119,22 @@ router.delete(
   protect,
   checkActiveSubscription,
   isHost,
+  checkHostApproval, // ✅ added
   deleteService
 );
 
 // Get a single service (for edit or frontend view)
-router.get("/:id", protect, checkActiveSubscription, isHost, getSingleService);
+router.get(
+  "/:id",
+  protect,
+  checkActiveSubscription,
+  isHost,
+  checkHostApproval, // ✅ added
+  getSingleService
+);
 
 
+router.get("/:id/slots", getAvailableSlotsForService);
 
 
 export default router;

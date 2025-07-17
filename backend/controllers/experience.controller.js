@@ -8,31 +8,35 @@ import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { hostCancelBooking } from "../utils/sendEmail.js";
 import { bookingCancelledEmail } from "../utils/sendEmail.js";
 
-
 //usr side-----
-
 //all-data fetch
+
 export const getAllExperiences = async (req, res) => {
   try {
     const { place, date } = req.query;
 
-    //No-filter or 'all' — return all
+    const baseQuery = {
+      status: "approved", // ✅ Only approved experiences
+    };
+
+    // No filter or 'all' — show all approved
     if (!place || place.toLowerCase() === "all") {
-      const allExperiences = await Experience.find().sort({ createdAt: -1 });
+      const allExperiences = await Experience.find(baseQuery).sort({
+        createdAt: -1,
+      });
       return res.status(200).json(allExperiences);
     }
 
-    // Filter  (state, area, or location)
-    const query = {
-      $or: [
-        { state: { $regex: place, $options: "i" } },
-        { area: { $regex: place, $options: "i" } },
-        { location: { $regex: place, $options: "i" } },
-      ],
-    };
+    // Filter by state, area, or location
+    baseQuery.$or = [
+      { state: { $regex: place, $options: "i" } },
+      { area: { $regex: place, $options: "i" } },
+      { location: { $regex: place, $options: "i" } },
+    ];
 
-    const experiences = await Experience.find(query).sort({ createdAt: -1 });
-
+    const experiences = await Experience.find(baseQuery).sort({
+      createdAt: -1,
+    });
 
     return res.status(200).json(experiences);
   } catch (err) {
@@ -43,28 +47,57 @@ export const getAllExperiences = async (req, res) => {
   }
 };
 
-// Get Experience by ID...
+
 export const getExperienceById = async (req, res) => {
   try {
     const expId = req.params.id;
+    const { date } = req.query;
 
     const experience = await Experience.findById(expId).populate(
       "host",
       "username email profileImage"
     );
+
     if (!experience) {
       return res.status(404).json({ message: "Experience not found" });
     }
 
-    res.status(200).json(experience);
+    let slotAvailability = [];
+
+    if (date) {
+      slotAvailability = experience.slots.map((slot) => {
+        const matched = experience.availability.find(
+          (entry) =>
+            entry.date === date &&
+            entry.slot.startTime === slot.startTime &&
+            entry.slot.endTime === slot.endTime
+        );
+
+        const bookedGuests = matched?.bookedGuests || 0;
+
+        return {
+          time: `${slot.startTime} - ${slot.endTime}`,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          maxGuests: slot.maxGuests,
+          bookedGuests,
+          availableGuests: slot.maxGuests - bookedGuests,
+        };
+      });
+    }
+
+    res.status(200).json({
+      ...experience.toObject(),
+      slotAvailability: date ? slotAvailability : undefined,
+    });
   } catch (err) {
+    console.error("Error in getExperienceById:", err);
     res.status(500).json({
       message: "Failed to fetch experience detail",
       error: err.message,
     });
   }
 };
-
 
 export const filterExperiencesByLocationOrCategory = async (req, res) => {
   try {
@@ -86,35 +119,138 @@ export const filterExperiencesByLocationOrCategory = async (req, res) => {
   }
 };
 
-// Host side experience
-
-//Create Experience...
 export const createExperience = async (req, res) => {
-  const {
-    title,
-    category,
-    location,
-    state,
-    description,
-    duration,
-    pricePerHead,
-    maxGuests,
-    highlights,
-    aboutHost,
-  } = req.body;
-
   try {
+    const {
+      title,
+      category,
+      location,
+      state,
+      description,
+      duration,
+      pricePerHead,
+      highlights,
+      aboutHost,
+      documentTypes,
+      slots,
+    } = req.body;
 
-    let imageUrls = [];
-    if (req.files && req.files.length > 0) {
-      const uploadPromises = req.files.map((file) =>
-        uploadToCloudinary(file.path, "experiences")
-      );
-      const imageResults = await Promise.all(uploadPromises);
-      imageUrls = imageResults.map((img) => img.secure_url);
+    // 🔒 Validate required fields
+    if (
+      !title ||
+      !category ||
+      !location ||
+      !state ||
+      !description ||
+      !duration ||
+      !pricePerHead
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Please fill all required fields" });
     }
 
-  
+    // 🧠 Parse and validate slots
+    let parsedSlots = [];
+    if (!slots) {
+      return res.status(400).json({ message: "Slots are required" });
+    }
+
+    try {
+      parsedSlots = Array.isArray(slots)
+        ? slots
+        : typeof slots === "string"
+        ? JSON.parse(slots)
+        : [];
+
+      if (parsedSlots.length === 0) {
+        return res
+          .status(400)
+          .json({ message: "At least one slot is required" });
+      }
+
+      // ⏳ Calculate endTime from duration
+      function calculateEndTime(startTime, duration) {
+        const [hours, minutes] = startTime.split(":").map(Number);
+        const durationInMinutes = Math.round(parseFloat(duration) * 60);
+        const startDate = new Date(2000, 0, 1, hours, minutes);
+        const endDate = new Date(
+          startDate.getTime() + durationInMinutes * 60000
+        );
+        const endHours = String(endDate.getHours()).padStart(2, "0");
+        const endMinutes = String(endDate.getMinutes()).padStart(2, "0");
+        return `${endHours}:${endMinutes}`;
+      }
+
+      var transformedSlots = [];
+
+      for (const slot of parsedSlots) {
+        if (!slot.time || !slot.maxGuests) {
+          return res.status(400).json({
+            message: "Each slot must include time and maxGuests",
+          });
+        }
+
+        const endTime = calculateEndTime(slot.time, duration);
+        transformedSlots.push({
+          startTime: slot.time,
+          endTime,
+          maxGuests: Number(slot.maxGuests),
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({ message: "Invalid slots format" });
+    }
+
+    // 📸 Upload Images
+    const imageFiles = req.files?.images || [];
+    if (imageFiles.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "At least one image is required" });
+    }
+
+    const uploadImagePromises = imageFiles.map((file) =>
+      uploadToCloudinary(file.path, "experiences")
+    );
+    const uploadedImages = await Promise.all(uploadImagePromises);
+    const imageUrls = uploadedImages.map((img) => img.secure_url);
+
+    // 📄 Upload Documents
+    const docFiles = req.files?.documents || [];
+    const docTypes = Array.isArray(documentTypes)
+      ? documentTypes
+      : documentTypes
+      ? [documentTypes]
+      : [];
+
+    let docUrls = [];
+    if (docFiles.length > 0 && docTypes.length === docFiles.length) {
+      for (let i = 0; i < docFiles.length; i++) {
+        const cloudRes = await uploadToCloudinary(
+          docFiles[i].path,
+          "experience_docs"
+        );
+        docUrls.push({
+          docType: docTypes[i],
+          url: cloudRes.secure_url,
+          status: "pending",
+          rejectionReason: "",
+        });
+      }
+    }
+
+    // ✨ Parse Highlights
+    const parsedHighlights = highlights
+      ? Array.isArray(highlights)
+        ? highlights
+        : highlights
+            .split(",")
+            .map((h) => h.trim())
+            .filter(Boolean)
+      : [];
+
+    // ✅ Create the Experience
     const newExperience = await Experience.create({
       host: req.user._id,
       title,
@@ -123,11 +259,14 @@ export const createExperience = async (req, res) => {
       state,
       description,
       duration,
-      pricePerHead,
-      maxGuests,
-      highlights: highlights ? highlights.split(",") : [],
+      pricePerHead: Number(pricePerHead),
       aboutHost,
+      highlights: parsedHighlights,
       images: imageUrls,
+      documents: docUrls,
+      slots: transformedSlots,
+      status: "pending",
+      rejectionReason: "",
     });
 
     res.status(201).json({
@@ -135,13 +274,15 @@ export const createExperience = async (req, res) => {
       experience: newExperience,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Experience creation failed", error: error.message });
+    console.error("CREATE EXPERIENCE ERROR:", error);
+    res.status(500).json({
+      message: "Failed to create experience",
+      error: error.message,
+    });
   }
 };
 
-//update expeience
+
 export const updateExperience = async (req, res) => {
   const { id } = req.params;
   const {
@@ -152,42 +293,82 @@ export const updateExperience = async (req, res) => {
     description,
     duration,
     pricePerHead,
-    maxGuests,
     highlights,
     aboutHost,
+    existingImages,
+    documentTypes,
+    slots, // ✅ NEW
   } = req.body;
 
   try {
     const experience = await Experience.findById(id);
-
     if (!experience) {
       return res.status(404).json({ message: "Experience not found" });
     }
 
-    // Host ownership check
     if (experience.host.toString() !== req.user._id.toString()) {
-      return res
-        .status(403)
-        .json({ message: "Unauthorized to update this experience" });
+      return res.status(403).json({ message: "Unauthorized access" });
     }
 
-    if (req.files && req.files.length > 0) {
-      console.log("🧾 Files received:", req.files); // 👈 Add this
-      try {
-        const uploadPromises = req.files.map((file) =>
-          uploadToCloudinary(file.path, "experiences")
+    // ✅ 1. Handle Images (retain + new)
+    let finalImages = [];
+    if (existingImages) {
+      finalImages =
+        typeof existingImages === "string"
+          ? [existingImages]
+          : [...existingImages];
+    }
+
+    const imageFiles = req.files?.images || [];
+    if (imageFiles.length > 0) {
+      const uploads = await Promise.all(
+        imageFiles.map((file) => uploadToCloudinary(file.path, "experiences"))
+      );
+      finalImages.push(...uploads.map((img) => img.secure_url));
+    }
+
+    experience.images = finalImages;
+
+    // ✅ 2. Handle Documents (replace only if not approved)
+    if (documentTypes) {
+      const docTypes = Array.isArray(documentTypes)
+        ? documentTypes
+        : [documentTypes];
+      const docFiles = Object.values(req.files || {})
+        .flat()
+        .filter((f) => f.fieldname.startsWith("docFile"));
+
+      for (let i = 0; i < docFiles.length; i++) {
+        const docFile = docFiles[i];
+        const docType = docTypes[i] || "other";
+
+        const cloudRes = await uploadToCloudinary(
+          docFile.path,
+          "experience_docs"
         );
-        const uploadResults = await Promise.all(uploadPromises);
-        experience.images = uploadResults.map((img) => img.secure_url);
-      } catch (uploadError) {
-        console.error("🔥 Cloudinary Upload Error:", uploadError); // 👈 Add this
-        return res.status(500).json({
-          message: "Image upload failed",
-          error: uploadError.message,
-        });
+
+        const existingDocIndex = experience.documents.findIndex(
+          (doc) => doc.docType === docType
+        );
+
+        if (existingDocIndex !== -1) {
+          if (experience.documents[existingDocIndex].status !== "approved") {
+            experience.documents[existingDocIndex].url = cloudRes.secure_url;
+            experience.documents[existingDocIndex].status = "pending";
+            experience.documents[existingDocIndex].rejectionReason = "";
+          }
+        } else {
+          experience.documents.push({
+            docType,
+            url: cloudRes.secure_url,
+            status: "pending",
+            rejectionReason: "",
+          });
+        }
       }
     }
 
+    // ✅ 3. Update text fields
     experience.title = title || experience.title;
     experience.category = category || experience.category;
     experience.location = location || experience.location;
@@ -195,7 +376,6 @@ export const updateExperience = async (req, res) => {
     experience.description = description || experience.description;
     experience.duration = duration || experience.duration;
     experience.pricePerHead = pricePerHead || experience.pricePerHead;
-    experience.maxGuests = maxGuests || experience.maxGuests;
     experience.aboutHost = aboutHost || experience.aboutHost;
     experience.highlights = highlights
       ? Array.isArray(highlights)
@@ -203,22 +383,56 @@ export const updateExperience = async (req, res) => {
         : highlights.split(",")
       : experience.highlights;
 
-    await experience.save();
+    // ✅ 4. Update slots if sent
+    if (slots) {
+      let parsedSlots = [];
 
-    res.status(200).json({
-      message: "Experience updated successfully",
-      experience,
-    });
-  } catch (error) {
-    console.error("🔥 Experience Update Error:", error);
-    res.status(500).json({
-      message: "Failed to update experience",
-      error: error.message,
-    });
+      if (typeof slots === "string") {
+        parsedSlots = JSON.parse(slots); // stringified JSON from frontend
+      } else if (Array.isArray(slots)) {
+        parsedSlots = slots;
+      }
+
+      if (!parsedSlots.length) {
+        return res
+          .status(400)
+          .json({ message: "At least one slot is required" });
+      }
+
+      for (const slot of parsedSlots) {
+        if (
+          !slot.startTime ||
+          !slot.endTime ||
+          !slot.maxGuests ||
+          isNaN(slot.maxGuests)
+        ) {
+          return res.status(400).json({
+            message: "Each slot must have startTime, endTime, and maxGuests",
+          });
+        }
+      }
+
+      // ✅ Update slots and reset availability if needed
+      experience.slots = parsedSlots;
+      // Optional: Clear availability if slot time range changed
+      experience.availability = [];
+      experience.status = "pending"; // Optional reset approval
+    }
+
+    await experience.save();
+    res
+      .status(200)
+      .json({ message: "Experience updated successfully", experience });
+  } catch (err) {
+    console.error("Update Experience Error:", err);
+    res
+      .status(500)
+      .json({ message: "Failed to update experience", error: err.message });
   }
 };
 
-//Get All Experiences by Host
+
+
 export const getHostExperiences = async (req, res) => {
   try {
     console.log("Decoded User from Token:", req.user); // 🔍 Add this
@@ -236,8 +450,7 @@ export const getHostExperiences = async (req, res) => {
   }
 };
 
-
-//delete 
+//delete
 export const deleteExperience = async (req, res) => {
   try {
     const { id } = req.params;
@@ -264,7 +477,6 @@ export const deleteExperience = async (req, res) => {
   }
 };
 
-
 //single experience
 export const getSingleExperience = async (req, res) => {
   try {
@@ -290,7 +502,7 @@ export const getSingleExperience = async (req, res) => {
   }
 };
 
-//booking and earing controller 
+//booking and earing controller
 export const getExperienceBookingsAndEarnings = async (req, res) => {
   try {
     const hostId = req.user._id;
@@ -303,7 +515,6 @@ export const getExperienceBookingsAndEarnings = async (req, res) => {
     if (range === "today") filterDate.setDate(now.getDate());
     else if (range === "7d") filterDate.setDate(now.getDate() - 7);
     else filterDate.setDate(now.getDate() - 30);
-
 
     const experienceIds = (
       await Experience.find({ host: hostId }).select("_id")
@@ -341,7 +552,6 @@ export const getExperienceBookingsAndEarnings = async (req, res) => {
       .json({ message: "Server error while fetching experience bookings." });
   }
 };
-
 
 //dashboard
 export const getExperienceDashboardStats = async (req, res) => {
@@ -429,7 +639,6 @@ export const getExperienceReviews = async (req, res) => {
 };
 
 
-
 export const cancelExperienceBookingByHost = async (req, res) => {
   try {
     const { reason = "" } = req.body;
@@ -453,7 +662,6 @@ export const cancelExperienceBookingByHost = async (req, res) => {
         .json({ message: "Experience reference missing in booking." });
     }
 
-
     if (booking.referenceId.host.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Unauthorized host." });
     }
@@ -462,22 +670,22 @@ export const cancelExperienceBookingByHost = async (req, res) => {
       return res.status(400).json({ message: "Booking already cancelled." });
     }
 
-    // 24 hour restriction
+    // Restrict cancellation within 24 hours
     const now = new Date();
     const experienceDate = new Date(booking.dateTime);
     const hoursBefore = (experienceDate - now) / (1000 * 60 * 60);
-
     if (hoursBefore < 24) {
       return res.status(400).json({
         message: "Cannot cancel within 24 hours of experience start.",
       });
     }
 
-    // Cancel booking
+    // ✅ Cancel booking
     booking.status = "cancelled";
     booking.cancelReason = reason;
     await booking.save();
 
+    // ✅ Refund if paid
     if (booking.razorpayPaymentId) {
       const razorpay = new Razorpay({
         key_id: process.env.RAZORPAY_KEY_ID,
@@ -489,11 +697,34 @@ export const cancelExperienceBookingByHost = async (req, res) => {
       });
     }
 
+    // ✅ Update Experience availability[]
+    const experience = booking.referenceId;
+    const { date, slotBooking, guests } = booking;
+
+    const availabilityIndex = experience.availability.findIndex(
+      (entry) =>
+        entry.date === date &&
+        entry.slot.startTime === slotBooking.startTime &&
+        entry.slot.endTime === slotBooking.endTime
+    );
+
+    if (availabilityIndex !== -1) {
+      experience.availability[availabilityIndex].bookedGuests -= guests;
+
+      // Prevent negative value
+      if (experience.availability[availabilityIndex].bookedGuests < 0) {
+        experience.availability[availabilityIndex].bookedGuests = 0;
+      }
+
+      await experience.save();
+    }
+
+    // ✅ Notify user
     await bookingCancelledEmail(booking.user.email, {
       username: booking.user.username,
-      title: booking.referenceId.title,
+      title: experience.title,
       type: "experience",
-      location: booking.referenceId.location,
+      location: experience.location,
       dateTime: experienceDate,
       guests: booking.guests,
       totalPrice: booking.totalPrice,
@@ -508,5 +739,47 @@ export const cancelExperienceBookingByHost = async (req, res) => {
     res
       .status(500)
       .json({ message: "Server error while cancelling experience booking." });
+  }
+};
+
+export const getAvailableExperienceSlots = async (req, res) => {
+  try {
+    const experienceId = req.params.id;
+    const date = req.query.date;
+
+    if (!date) {
+      return res.status(400).json({ message: "Date query is required" });
+    }
+
+    const experience = await Experience.findById(experienceId);
+    if (!experience) {
+      return res.status(404).json({ message: "Experience not found" });
+    }
+
+    const slots = experience.slots;
+
+    const slotAvailability = slots.map((slot) => {
+      const matchingEntry = experience.availability.find(
+        (entry) =>
+          entry.date === date &&
+          entry.slot.startTime === slot.startTime &&
+          entry.slot.endTime === slot.endTime
+      );
+
+      const bookedGuests = matchingEntry?.bookedGuests || 0;
+
+      return {
+        time: `${slot.startTime} - ${slot.endTime}`,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        maxGuests: slot.maxGuests,
+        bookedGuests,
+      };
+    });
+
+    return res.status(200).json(slotAvailability);
+  } catch (error) {
+    console.error("Error fetching experience slots:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
