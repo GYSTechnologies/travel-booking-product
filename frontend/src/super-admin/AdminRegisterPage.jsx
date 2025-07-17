@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../api/axiosInstance";
 
 const AdminRegisterPage = () => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const AdminRegisterPage = () => {
     e.preventDefault();
 
     try {
-      const res = await axios.post("/api/super-admin/register", formData);
+      const res = await axios.post("http://localhost:4000/api/super-admin/register", formData);
       toast.success("Super Admin registered successfully!");
       navigate("/super-admin/login");
     } catch (err) {

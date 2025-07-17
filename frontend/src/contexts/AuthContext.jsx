@@ -44,17 +44,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    // <AuthContext.Provider
-    // //   value={{
-    // //     user,
-    // //     token,
-    // //     login,
-    // //     logout,
-    // //     bookingData: bookingDataState,
-    // //     setBookingData,
-    // //     loading,
-    // //   }}
-    // // >
+
     <AuthContext.Provider
       value={{
         user,

@@ -313,11 +313,24 @@ const HostResubmitForm = () => {
                       <label className="cursor-pointer flex items-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition flex-1">
                         <FileText className="w-5 h-5 text-gray-600 mr-3" />
                         <div className="flex-1">
-                          <span className="text-sm font-medium text-gray-700 block">
+                          {/* <span className="text-sm font-medium text-gray-700 block">
+                            {formData.aadhaarCard
+                              ? formData.aadhaarCard.name
+                              : "Choose Aadhaar Card"}
+                          </span> */}
+                          <span
+                            className="text-sm font-medium text-gray-700 block truncate max-w-[100px]"
+                            title={
+                              formData.aadhaarCard
+                                ? formData.aadhaarCard.name
+                                : "Choose Aadhaar Card"
+                            }
+                          >
                             {formData.aadhaarCard
                               ? formData.aadhaarCard.name
                               : "Choose Aadhaar Card"}
                           </span>
+
                           <span className="text-xs text-gray-500">
                             PDF, JPG, PNG files
                           </span>
@@ -357,11 +370,24 @@ const HostResubmitForm = () => {
                       <label className="cursor-pointer flex items-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition flex-1">
                         <FileText className="w-5 h-5 text-gray-600 mr-3" />
                         <div className="flex-1">
-                          <span className="text-sm font-medium text-gray-700 block">
+                          {/* <span className="text-sm font-medium text-gray-700 block">
+                            {formData.panCard
+                              ? formData.panCard.name
+                              : "Choose PAN Card"}
+                          </span> */}
+                          <span
+                            className="text-sm font-medium text-gray-700 block truncate max-w-[100px]"
+                            title={
+                              formData.panCard
+                                ? formData.panCard.name
+                                : "Choose PAN Card"
+                            }
+                          >
                             {formData.panCard
                               ? formData.panCard.name
                               : "Choose PAN Card"}
                           </span>
+
                           <span className="text-xs text-gray-500">
                             PDF, JPG, PNG files
                           </span>

@@ -1,5 +1,6 @@
 import Razorpay from "razorpay";
 import Subscription from "../models/subscription.js";
+import User from "../models/user.js";
 import { addMonths } from "date-fns";
 import { isValidRazorpaySignature } from "../utils/verifyRazorpaySignature.js";
 import { sendSubscriptionConfirmationEmail } from "../utils/sendEmail.js";
@@ -100,10 +101,10 @@ export const verifySubscriptionPayment = async (req, res) => {
       { upsert: true, new: true }
     );
 
-    // ✅ Update user's `hasActiveSubscription` flag to true
-    await User.findByIdAndUpdate(userId, {
-      hasActiveSubscription: true,
-    });
+    // // ✅ Update user's `hasActiveSubscription` flag to true
+    // await User.findByIdAndUpdate(userId, {
+    //   hasActiveSubscription: true,
+    // });
 
     // ✅ Send confirmation email
     await sendSubscriptionConfirmationEmail(email, {

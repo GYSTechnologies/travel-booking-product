@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CancelBookingModal from "./CancelBookingModal";
+import { fetchMyBookings } from "../api/allAPIs";
 
 const BookingHistoryPage = () => {
   const { token } = useAuth();
@@ -18,15 +19,8 @@ const BookingHistoryPage = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const res = await axios.get(
-          "http://localhost:4000/api/bookings/my-bookings",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        setBookings(res.data);
+       const data = await fetchMyBookings(token);
+      setBookings(data);
       } catch (err) {
         console.error("Error fetching bookings:", err);
         toast.error("Failed to load bookings");
@@ -40,26 +34,18 @@ const BookingHistoryPage = () => {
 
   const handleCancel = async (bookingId, reason = "") => {
     try {
-      const res = await axios.put(
-        `http://localhost:4000/api/user/${bookingId}/cancel`,
-        { reason },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      toast.success(res.data.message);
-      setBookings((prev) =>
-        prev.map((b) =>
-          b._id === bookingId ? { ...b, status: "cancelled" } : b
-        )
-      );
+const res = await cancelBooking(token, bookingId, reason);
+    toast.success(res.message);
+    setBookings((prev) =>
+      prev.map((b) =>
+        b._id === bookingId ? { ...b, status: "cancelled" } : b
+      )
+    );
     } catch (err) {
       console.error("Cancel error:", err);
       toast.error(err.response?.data?.message || "Failed to cancel booking");
     } finally {
-      setSelectedBooking(null); // close modal after
+      setSelectedBooking(null);
     }
   };
 
@@ -74,7 +60,7 @@ const BookingHistoryPage = () => {
   });
 
   const renderBookings = (list, isUpcoming) => {
-    let filtered = list.filter((b) => b.referenceId); // 🧹 remove deleted listings
+    let filtered = list.filter((b) => b.referenceId); 
 
     if (filterType !== "all") {
       filtered = filtered.filter((b) => b.type === filterType);

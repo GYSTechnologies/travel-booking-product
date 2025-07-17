@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useSuperAdmin } from "../contexts/SuperAdminContext";
 import { toast } from "react-toastify";
+import { fetchRejectedListings as getRejectedListings } from "../api/allAPIs"; // centralized import
 
 const RejectedListingsPage = () => {
   const [listings, setListings] = useState({
@@ -13,6 +14,28 @@ const RejectedListingsPage = () => {
   const [loading, setLoading] = useState(false);
   const { token } = useSuperAdmin();
 
+  // useEffect(() => {
+  //   fetchRejectedListings();
+  // }, []);
+
+  // const fetchRejectedListings = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const res = await axios.get(
+  //       "http://localhost:4000/api/super-admin/listings/rejected",
+  //       {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       }
+  //     );
+  //     setListings(res.data);
+  //   } catch (error) {
+  //     console.error("Error fetching rejected listings:", error);
+  //     toast.error("Failed to fetch rejected listings");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   useEffect(() => {
     fetchRejectedListings();
   }, []);
@@ -20,13 +43,8 @@ const RejectedListingsPage = () => {
   const fetchRejectedListings = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(
-        "http://localhost:4000/api/super-admin/listings/rejected",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setListings(res.data);
+      const data = await getRejectedListings(token);
+      setListings(data);
     } catch (error) {
       console.error("Error fetching rejected listings:", error);
       toast.error("Failed to fetch rejected listings");

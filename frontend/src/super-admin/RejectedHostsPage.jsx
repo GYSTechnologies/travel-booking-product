@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useSuperAdmin } from "../contexts/SuperAdminContext"; // ✅ import context
 import { toast } from "react-toastify";
+import { fetchRejectedHosts as getRejectedHosts } from "../api/allAPIs"; // centralized import
+
 
 const RejectedHostsPage = () => {
   const [hosts, setHosts] = useState([]);
@@ -9,30 +11,48 @@ const RejectedHostsPage = () => {
 
   const { token } = useSuperAdmin(); // ✅ get token
 
-  const fetchRejectedHosts = async () => {
-    if (!token) return;
-    try {
-      setLoading(true);
-      const res = await axios.get(
-        "http://localhost:4000/api/super-admin/hosts/rejected",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // ✅ attach token
-          },
-        }
-      );
-      setHosts(res.data);
-    } catch (error) {
-      console.error("Failed to fetch rejected hosts:", error);
-      toast.error("Failed to fetch rejected hosts");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const fetchRejectedHosts = async () => {
+  //   if (!token) return;
+  //   try {
+  //     setLoading(true);
+  //     const res = await axios.get(
+  //       "http://localhost:4000/api/super-admin/hosts/rejected",
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`, // ✅ attach token
+  //         },
+  //       }
+  //     );
+  //     setHosts(res.data);
+  //   } catch (error) {
+  //     console.error("Failed to fetch rejected hosts:", error);
+  //     toast.error("Failed to fetch rejected hosts");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  useEffect(() => {
-    fetchRejectedHosts();
-  }, [token]);
+  // useEffect(() => {
+  //   fetchRejectedHosts();
+  // }, [token]);
+
+  const fetchRejectedHosts = async () => {
+  if (!token) return;
+  try {
+    setLoading(true);
+    const data = await getRejectedHosts(token);
+    setHosts(data);
+  } catch (error) {
+    console.error("Failed to fetch rejected hosts:", error);
+    toast.error("Failed to fetch rejected hosts");
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  fetchRejectedHosts();
+}, [token]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

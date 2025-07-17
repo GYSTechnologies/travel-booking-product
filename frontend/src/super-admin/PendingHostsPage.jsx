@@ -2,6 +2,12 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useSuperAdmin } from "../contexts/SuperAdminContext";
 import { toast } from "react-toastify";
+import {
+  fetchPendingHosts,
+  approveHost,
+  rejectHost,
+} from "../api/allAPIs"; // use this path
+
 
 const PendingHostsPage = () => {
   const [pendingHosts, setPendingHosts] = useState([]);

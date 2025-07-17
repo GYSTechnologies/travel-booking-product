@@ -2,6 +2,11 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { format } from "date-fns";
+import {
+  fetchDashboardBookings,
+  cancelBookingByHost,
+} from "../api/allAPIs";
+
 
 const BookingTable = () => {
   const { user, token } = useAuth();
@@ -19,53 +24,84 @@ const BookingTable = () => {
     return "";
   };
 
+  // const fetchBookings = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const res = await axios.get(`${getApiUrl()}?range=${range}`, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     setBookings(res.data?.data?.bookings || []);
+  //   } catch (err) {
+  //     console.error("Error fetching bookings:", err.message);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const fetchBookings = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${getApiUrl()}?range=${range}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setBookings(res.data?.data?.bookings || []);
-    } catch (err) {
-      console.error("Error fetching bookings:", err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  try {
+    const bookings = await fetchDashboardBookings(token, type, range);
+    setBookings(bookings);
+  } catch (err) {
+    console.error("Error fetching bookings:", err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  useEffect(() => {
-    if (token && user) fetchBookings();
-  }, [token, user, range, type]);
+useEffect(() => {
+  if (token && user) fetchBookings();
+}, [token, user, range, type]);
 
-  const handleCancel = async (bookingId) => {
-    const reason = prompt("Enter reason for cancellation (optional):") || "";
-    if (!window.confirm("Are you sure you want to cancel this booking?"))
-      return;
 
-    try {
-      const cancelUrl =
-        type === "hotel"
-          ? `http://localhost:4000/api/host/bookings/${bookingId}/cancel-by-host`
-          : `http://localhost:4000/api/${type}/bookings/${bookingId}/cancel-by-host`;
+  // const handleCancel = async (bookingId) => {
+  //   const reason = prompt("Enter reason for cancellation (optional):") || "";
+  //   if (!window.confirm("Are you sure you want to cancel this booking?"))
+  //     return;
 
-      const res = await axios.put(
-        cancelUrl,
-        { reason },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  //   try {
+  //     const cancelUrl =
+  //       type === "hotel"
+  //         ? `http://localhost:4000/api/host/bookings/${bookingId}/cancel-by-host`
+  //         : `http://localhost:4000/api/${type}/bookings/${bookingId}/cancel-by-host`;
 
-      alert(res.data.message || "Booking cancelled");
+  //     const res = await axios.put(
+  //       cancelUrl,
+  //       { reason },
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
 
-      setBookings((prev) =>
-        prev.map((b) =>
-          b._id === bookingId ? { ...b, status: "cancelled" } : b
-        )
-      );
-    } catch (err) {
-      alert(err.response?.data?.message || "Error cancelling booking");
-    }
-  };
+  //     alert(res.data.message || "Booking cancelled");
 
+  //     setBookings((prev) =>
+  //       prev.map((b) =>
+  //         b._id === bookingId ? { ...b, status: "cancelled" } : b
+  //       )
+  //     );
+  //   } catch (err) {
+  //     alert(err.response?.data?.message || "Error cancelling booking");
+  //   }
+  // };
+
+  
+const handleCancel = async (bookingId) => {
+  const reason = prompt("Enter reason for cancellation (optional):") || "";
+  if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+
+  try {
+    const res = await cancelBookingByHost(token, type, bookingId, reason);
+    alert(res.message || "Booking cancelled");
+
+    setBookings((prev) =>
+      prev.map((b) =>
+        b._id === bookingId ? { ...b, status: "cancelled" } : b
+      )
+    );
+  } catch (err) {
+    alert(err.response?.data?.message || "Error cancelling booking");
+  }
+};
   const today = new Date();
 
   const upcomingBookings = bookings.filter((b) => {

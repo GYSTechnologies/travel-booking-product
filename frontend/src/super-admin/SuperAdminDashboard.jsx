@@ -1,11 +1,54 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { Users, CheckCircle, Clock, Building2, Wrench, Calendar, Crown, TrendingUp, Settings, UserCheck } from "lucide-react";
+import {
+  Users,
+  CheckCircle,
+  Clock,
+  Building2,
+  Wrench,
+  Calendar,
+  Crown,
+  TrendingUp,
+  Settings,
+  UserCheck,
+} from "lucide-react";
+
+import { fetchDashboardStats } from "../api/allAPIs"; // centralized import
 
 const SuperAdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const navigate = useNavigate();
+
+  // useEffect(() => {
+  //   const fetchStats = async () => {
+  //     try {
+  //       const token = localStorage.getItem("adminToken");
+  //       if (!token || token === "undefined") {
+  //         throw new Error("No valid token found");
+  //       }
+
+  //       const res = await axios.get("http://localhost:4000/api/super-admin/dashboard/overview", {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       });
+
+  //       setStats(res.data);
+  //     } catch (err) {
+  //       console.error("Failed to fetch dashboard stats", err);
+
+  //       if (err.response?.status === 401) {
+  //         // Token invalid or expired — logout and redirect
+  //         localStorage.removeItem("adminToken");
+  //         localStorage.removeItem("adminData");
+  //         navigate("/super-admin/login");
+  //       }
+  //     }
+  //   };
+
+  //   fetchStats();
+  // }, [navigate]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -15,18 +58,12 @@ const SuperAdminDashboard = () => {
           throw new Error("No valid token found");
         }
 
-        const res = await axios.get("http://localhost:4000/api/super-admin/dashboard/overview", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        setStats(res.data);
+        const data = await fetchDashboardStats(token);
+        setStats(data);
       } catch (err) {
         console.error("Failed to fetch dashboard stats", err);
 
         if (err.response?.status === 401) {
-          // Token invalid or expired — logout and redirect
           localStorage.removeItem("adminToken");
           localStorage.removeItem("adminData");
           navigate("/super-admin/login");
@@ -71,15 +108,21 @@ const SuperAdminDashboard = () => {
           {!stats ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-              <p className="text-gray-500 text-lg">Loading dashboard stats...</p>
+              <p className="text-gray-500 text-lg">
+                Loading dashboard stats...
+              </p>
             </div>
           ) : (
             <>
               <div className="mb-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Platform Overview</h2>
-                <p className="text-gray-600">Your platform's performance at a glance</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
+                  Platform Overview
+                </h2>
+                <p className="text-gray-600">
+                  Your platform's performance at a glance
+                </p>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <StatCard
                   icon={<Users className="text-blue-500" />}
@@ -148,10 +191,12 @@ const SuperAdminDashboard = () => {
         {/* Quick Actions Section */}
         <div className="mt-8 bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
           <div className="mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Quick Actions</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
+              Quick Actions
+            </h2>
             <p className="text-gray-600">Manage your platform efficiently</p>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <QuickActionCard
               icon={<UserCheck className="text-green-500" />}
@@ -185,18 +230,20 @@ const SuperAdminDashboard = () => {
 };
 
 const StatCard = ({ icon, label, value, bgColor, borderColor, index }) => (
-  <div 
+  <div
     className={`${bgColor} ${borderColor} border-2 rounded-2xl p-4 sm:p-6 flex items-center gap-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 cursor-pointer group`}
     style={{
       animationDelay: `${index * 150}ms`,
-      animation: "slideInUp 0.6s ease-out forwards"
+      animation: "slideInUp 0.6s ease-out forwards",
     }}
   >
     <div className="bg-white p-3 sm:p-4 rounded-xl shadow-md group-hover:shadow-lg transition-shadow duration-300">
       {icon}
     </div>
     <div className="flex-1">
-      <p className="text-xs sm:text-sm text-gray-600 font-medium mb-1">{label}</p>
+      <p className="text-xs sm:text-sm text-gray-600 font-medium mb-1">
+        {label}
+      </p>
       <h3 className="text-lg sm:text-2xl font-bold text-gray-800 group-hover:text-gray-900 transition-colors duration-300">
         {value}
       </h3>
@@ -204,12 +251,19 @@ const StatCard = ({ icon, label, value, bgColor, borderColor, index }) => (
   </div>
 );
 
-const QuickActionCard = ({ icon, title, description, bgColor, index, onClick }) => (
-  <div 
+const QuickActionCard = ({
+  icon,
+  title,
+  description,
+  bgColor,
+  index,
+  onClick,
+}) => (
+  <div
     className={`${bgColor} rounded-2xl p-4 sm:p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer group border border-gray-100`}
     style={{
       animationDelay: `${(index + 7) * 150}ms`,
-      animation: "slideInUp 0.6s ease-out forwards"
+      animation: "slideInUp 0.6s ease-out forwards",
     }}
     onClick={onClick}
   >
@@ -221,7 +275,9 @@ const QuickActionCard = ({ icon, title, description, bgColor, index, onClick }) 
         {title}
       </h3>
     </div>
-    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">{description}</p>
+    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+      {description}
+    </p>
   </div>
 );
 
@@ -238,4 +294,4 @@ export default SuperAdminDashboard;
       transform: translateY(0);
     }
   }
-`}</style>
+`}</style>;

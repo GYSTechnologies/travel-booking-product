@@ -339,12 +339,10 @@ export const approveListing = async (req, res) => {
     const listing = await Model.findById(id).populate("host");
 
     if (!listing) {
-      console.log("❌ Listing not found");
       return res.status(404).json({ message: "Listing not found" });
     }
 
     if (!listing.host || !listing.host.email) {
-      console.log("❌ Host email not found for listing:", listing._id);
       return res.status(400).json({ message: "Listing host email not found" });
     }
 

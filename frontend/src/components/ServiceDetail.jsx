@@ -16,6 +16,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { fetchServiceById, fetchServiceSlots } from "../api/allAPIs";
 
 const ServiceDetail = () => {
   const { id } = useParams();
@@ -26,9 +27,7 @@ const ServiceDetail = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedSlotData, setSelectedSlotData] = useState(null);
 
-  // const selectedSlotData = availableSlots.find(
-  //   (slot) => slot.time === selectedSlot
-  // );
+
 
   const [service, setService] = useState(null);
   const [formData, setFormData] = useState({
@@ -37,30 +36,52 @@ const ServiceDetail = () => {
     guests: 1,
   });
 
-  useEffect(() => {
-    const fetchService = async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:4000/api/services/service-detail/${id}`
-        );
-        setService(res.data);
-      } catch (err) {
-        console.error("Failed to fetch service:", err);
-      }
-    };
-    fetchService();
-  }, [id]);
+  // useEffect(() => {
+  //   const fetchService = async () => {
+  //     try {
+  //       const res = await axios.get(
+  //         `http://localhost:4000/api/services/service-detail/${id}`
+  //       );
+  //       setService(res.data);
+  //     } catch (err) {
+  //       console.error("Failed to fetch service:", err);
+  //     }
+  //   };
+  //   fetchService();
+  // }, [id]);
 
-  const fetchAvailableSlots = async (selectedDate) => {
+  useEffect(() => {
+  const fetchService = async () => {
     try {
-      const res = await axios.get(
-        `http://localhost:4000/api/services/${id}/slots?date=${selectedDate}`
-      );
-      setAvailableSlots(res.data); // Array of { time, maxGuests, bookedGuests }
+      const data = await fetchServiceById(id);
+      setService(data);
     } catch (err) {
-      console.error("Failed to fetch slots:", err);
+      console.error("Failed to fetch service:", err);
     }
   };
+  fetchService();
+}, [id]);
+
+
+  // const fetchAvailableSlots = async (selectedDate) => {
+  //   try {
+  //     const res = await axios.get(
+  //       `http://localhost:4000/api/services/${id}/slots?date=${selectedDate}`
+  //     );
+  //     setAvailableSlots(res.data); // Array of { time, maxGuests, bookedGuests }
+  //   } catch (err) {
+  //     console.error("Failed to fetch slots:", err);
+  //   }
+  // };
+
+  const fetchAvailableSlots = async (selectedDate) => {
+  try {
+    const data = await fetchServiceSlots(id, selectedDate);
+    setAvailableSlots(data);
+  } catch (err) {
+    console.error("Failed to fetch slots:", err);
+  }
+};
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));

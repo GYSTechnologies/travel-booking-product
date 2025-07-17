@@ -20,7 +20,7 @@ export default function Navbar({
   setSearchData,
   activeTab = "hotel",
   setActiveTab,
-  resetSearch, // ✅ Add this,
+  resetSearch, 
 }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
