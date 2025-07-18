@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const superAdminAxios = axios.create({
-  baseURL: "http://localhost:4000",
+  baseURL: "https://ghumakad-web-application.onrender.com",
 });
 
 // Interceptor to add Bearer token

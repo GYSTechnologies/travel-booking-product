@@ -3,7 +3,7 @@ import axios from "axios";
 
 const axiosInstance = (token) =>
   axios.create({
-    baseURL: "http://localhost:4000/api",
+    baseURL: "https://ghumakad-web-application.onrender.com/api",
     headers: {
       Authorization: `Bearer ${token}`,
     },

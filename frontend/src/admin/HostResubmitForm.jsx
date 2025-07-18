@@ -79,7 +79,7 @@ const HostResubmitForm = () => {
 
     try {
       await axios.patch(
-        "http://localhost:4000/api/auth/profile-resubmit", // ✅ correct endpoint
+        "https://ghumakad-web-application.onrender.com/api/auth/profile-resubmit", // ✅ correct endpoint
         form,
         {
           headers: {
