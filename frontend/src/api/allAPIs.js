@@ -363,9 +363,48 @@ export const fetchDashboardStats = async (token) => {
 
 
 
-// Get Create/Update API URL based on listing type
+// // Get Create/Update API URL based on listing type
+// export const getApiUrls = (type, editMode, id) => {
+//   const base = "http://localhost:4000/api";
+
+//   switch (type) {
+//     case "hotel":
+//       return {
+//         url: editMode
+//           ? `${base}/host/hotel-update/${id}`
+//           : `${base}/host/hotel-create`,
+//         key: "hotel",
+//       };
+
+//     case "services":
+//       return {
+//         url: editMode
+//           ? `${base}/services/update/${id}`
+//           : `${base}/services/create-service`,
+//         key: "service",
+//       };
+
+//     case "experiences":
+//       return {
+//         url: editMode
+//           ? `${base}/experiences/update/${id}`
+//           : `${base}/experiences/create-experience`,
+//         key: "experience",
+//       };
+
+//     default:
+//       return { url: "", key: "" };
+//   }
+// };
+
 export const getApiUrls = (type, editMode, id) => {
   const base = "http://localhost:4000/api";
+
+  const isInvalidId = !id || id === ":" || id === "undefined" || id === "null";
+
+  if (editMode && isInvalidId) {
+    throw new Error(`❌ Invalid or missing ID in editMode for type: "${type}"`);
+  }
 
   switch (type) {
     case "hotel":
@@ -393,7 +432,7 @@ export const getApiUrls = (type, editMode, id) => {
       };
 
     default:
-      return { url: "", key: "" };
+      throw new Error(`❌ Unknown type: "${type}" provided to getApiUrls`);
   }
 };
 

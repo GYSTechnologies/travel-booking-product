@@ -10,7 +10,121 @@ import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { releaseHotelRooms } from "../utils/bookingCancel.js";
 import { userCancelBooking } from "../utils/sendEmail.js";
 
-//cancel booking controller...
+// //cancel booking controller...
+// export const cancelBookingByUser = async (req, res) => {
+//   try {
+//     const { reason = "" } = req.body;
+
+//     const booking = await Booking.findById(req.params.id).populate("user");
+
+//     if (!booking) {
+//       return res.status(404).json({ message: "Booking not found" });
+//     }
+
+//     if (booking.user._id.toString() !== req.user._id.toString()) {
+//       return res.status(403).json({ message: "Unauthorized access" });
+//     }
+
+//     if (booking.status === "cancelled") {
+//       return res.status(400).json({ message: "Booking already cancelled" });
+//     }
+
+//     // Dynamically load referenced model
+//     const Model =
+//       booking.type === "hotel"
+//         ? Hotel
+//         : booking.type === "service"
+//         ? Service
+//         : Experience;
+
+//     const item = await Model.findById(booking.referenceId);
+//     const host = await User.findById(item.host);
+
+//     const checkDate =
+//       booking.type === "hotel" ? booking.checkIn : booking.dateTime;
+//     const hoursBefore = (new Date(checkDate) - new Date()) / (1000 * 60 * 60);
+
+//     let refundPercent = 0;
+//     if (hoursBefore >= 24) refundPercent = 1;
+//     else if (hoursBefore >= 12) refundPercent = 0.5;
+//     else if (hoursBefore >= 6) refundPercent = 0.25;
+
+//     const refundAmount = Math.round(booking.totalPrice * refundPercent);
+
+//     // Update booking status
+//     booking.status = "cancelled";
+//     booking.cancelReason = reason;
+//     await booking.save();
+
+//     // Razorpay refund logic
+//     if (refundAmount > 0 && booking.razorpayPaymentId) {
+//       const razorpay = new Razorpay({
+//         key_id: process.env.RAZORPAY_KEY_ID,
+//         key_secret: process.env.RAZORPAY_SECRET,
+//       });
+
+//       await razorpay.payments.refund(booking.razorpayPaymentId, {
+//         amount: refundAmount * 100,
+//       });
+//     }
+
+//     // Release hotel availability
+//     if (booking.type === "hotel") {
+//       await releaseHotelRooms(
+//         booking.referenceId,
+//         booking.checkIn,
+//         booking.checkOut,
+//         booking.rooms
+//       );
+//     }
+
+//     // ✅ Release service or experience slot availability
+//     if (booking.type === "service" || booking.type === "experience") {
+//       const { date, slotBooking, guests } = booking;
+
+//       const slotKey = slotBooking?.startTime;
+//       if (slotKey && date) {
+//         const availabilityIndex = item.availability.findIndex(
+//           (entry) =>
+//             entry.date === date &&
+//             entry.slot.startTime === slotBooking.startTime &&
+//             entry.slot.endTime === slotBooking.endTime
+//         );
+
+//         if (availabilityIndex !== -1) {
+//           item.availability[availabilityIndex].bookedGuests -= guests;
+
+//           if (item.availability[availabilityIndex].bookedGuests < 0) {
+//             item.availability[availabilityIndex].bookedGuests = 0;
+//           }
+
+//           await item.save();
+//         }
+//       }
+//     }
+
+//     // Send email to host
+//     await userCancelBooking(host.email, {
+//       hostUsername: host.username,
+//       userUsername: booking.user.username,
+//       itemTitle: item.title,
+//       type: booking.type,
+//       checkDate,
+//       reason,
+//       refundAmount,
+//     });
+
+//     res.status(200).json({
+//       message: `Booking cancelled successfully. ₹${refundAmount} refunded.`,
+//       refundAmount,
+//     });
+//   } catch (err) {
+//     console.error("Cancel Booking Error:", err.message);
+//     res.status(500).json({ message: "Server error during cancellation." });
+//   }
+// };
+
+// cancel booking controller...
 export const cancelBookingByUser = async (req, res) => {
   try {
     const { reason = "" } = req.body;
@@ -78,11 +192,15 @@ export const cancelBookingByUser = async (req, res) => {
       );
     }
 
-    // ✅ Release service or experience slot availability
-    if (booking.type === "service" || booking.type === "experience") {
+    // ✅ Release service or experience slot availability safely
+    if (
+      (booking.type === "service" || booking.type === "experience") &&
+      Array.isArray(item.availability)
+    ) {
       const { date, slotBooking, guests } = booking;
 
       const slotKey = slotBooking?.startTime;
+
       if (slotKey && date) {
         const availabilityIndex = item.availability.findIndex(
           (entry) =>
@@ -123,6 +241,7 @@ export const cancelBookingByUser = async (req, res) => {
     res.status(500).json({ message: "Server error during cancellation." });
   }
 };
+
 
 //review create...
 export const createReview = async (req, res) => {

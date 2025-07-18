@@ -123,6 +123,10 @@ router.delete(
   deleteService
 );
 
+router.get("/:id/slots", getAvailableSlotsForService);
+
+
+
 // Get a single service (for edit or frontend view)
 router.get(
   "/:id",
@@ -133,8 +137,6 @@ router.get(
   getSingleService
 );
 
-
-router.get("/:id/slots", getAvailableSlotsForService);
 
 
 export default router;

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { format } from "date-fns";
@@ -6,7 +5,7 @@ import { toast } from "react-toastify";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CancelBookingModal from "./CancelBookingModal";
-import { fetchMyBookings } from "../api/allAPIs";
+import { fetchMyBookings, cancelBooking } from "../api/allAPIs";
 
 const BookingHistoryPage = () => {
   const { token } = useAuth();
@@ -19,8 +18,8 @@ const BookingHistoryPage = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-       const data = await fetchMyBookings(token);
-      setBookings(data);
+        const data = await fetchMyBookings(token);
+        setBookings(data);
       } catch (err) {
         console.error("Error fetching bookings:", err);
         toast.error("Failed to load bookings");
@@ -34,13 +33,13 @@ const BookingHistoryPage = () => {
 
   const handleCancel = async (bookingId, reason = "") => {
     try {
-const res = await cancelBooking(token, bookingId, reason);
-    toast.success(res.message);
-    setBookings((prev) =>
-      prev.map((b) =>
-        b._id === bookingId ? { ...b, status: "cancelled" } : b
-      )
-    );
+      const res = await cancelBooking(token, bookingId, reason);
+      toast.success(res.message);
+      setBookings((prev) =>
+        prev.map((b) =>
+          b._id === bookingId ? { ...b, status: "cancelled" } : b
+        )
+      );
     } catch (err) {
       console.error("Cancel error:", err);
       toast.error(err.response?.data?.message || "Failed to cancel booking");
@@ -60,7 +59,7 @@ const res = await cancelBooking(token, bookingId, reason);
   });
 
   const renderBookings = (list, isUpcoming) => {
-    let filtered = list.filter((b) => b.referenceId); 
+    let filtered = list.filter((b) => b.referenceId);
 
     if (filterType !== "all") {
       filtered = filtered.filter((b) => b.type === filterType);
@@ -556,7 +555,6 @@ const res = await cancelBooking(token, bookingId, reason);
                 <h2 className="text-xl sm:text-2xl font-semibold text-gray-800">
                   Upcoming Bookings
                 </h2>
-              
               </div>
               {renderBookings(upcoming, true)}
             </div>
@@ -582,7 +580,6 @@ const res = await cancelBooking(token, bookingId, reason);
                 <h2 className="text-xl sm:text-2xl font-semibold text-gray-800">
                   Past Bookings
                 </h2>
-
               </div>
               {renderBookings(past, false)}
             </div>
@@ -601,4 +598,3 @@ const res = await cancelBooking(token, bookingId, reason);
 };
 
 export default BookingHistoryPage;
-

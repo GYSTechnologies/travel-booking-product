@@ -24,13 +24,11 @@ const ExperienceDetail = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedSlotData, setSelectedSlotData] = useState(null);
 
- 
   useEffect(() => {
     const fetchExperience = async () => {
       try {
-             const data = await fetchExperienceById(id);
-      setExperience(data);
-
+        const data = await fetchExperienceById(id);
+        setExperience(data);
       } catch (err) {
         console.error("Failed to fetch experience detail", err);
       }
@@ -44,7 +42,7 @@ const ExperienceDetail = () => {
       try {
         const data = await fetchExperienceSlots(id, formData.date);
 
-      setAvailableSlots(data);
+        setAvailableSlots(data);
       } catch (err) {
         console.error("Failed to fetch slots:", err);
       }
@@ -204,10 +202,19 @@ const ExperienceDetail = () => {
                   className="w-16 h-16 rounded-full object-cover ring-4 ring-emerald-200"
                 />
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-1 truncate max-w-[200px]">
                     {experience.host?.username}
                   </h3>
-                  <p className="text-gray-600 mb-2">{experience.host?.email}</p>
+
+                  {/* <p className="text-gray-600 mb-2">{experience.host?.email}</p> */}
+                  <p className="text-gray-600 mb-2 truncate max-w-[200px]">
+                    {experience.host?.email?.length > 22
+                      ? experience.host.email.slice(0, 19) + "..."
+                      : experience.host?.email}
+
+
+                  </p>
+
                   <div className="flex items-center gap-2 text-sm text-emerald-600">
                     <Shield className="w-4 h-4" />
                     <span>Verified Host</span>
@@ -372,43 +379,6 @@ const ExperienceDetail = () => {
               )}
 
               {/* Reserve Button */}
-              {/* <button
-                // disabled={!isFormComplete}
-                disabled={
-                  !formData.date ||
-                  !selectedSlot ||
-                  formData.guests <= 0 ||
-                  guestExceedsSlot
-                }
-                onClick={() => {
-                  const bookingDetails = {
-                    type: "experience",
-                    experienceId: experience._id,
-                    experienceTitle: experience.title,
-                    date: formData.date,
-                    time: selectedSlot, // slot selection added
-                    guests: formData.guests,
-                    totalPrice: Math.round(totalPrice * 1.22),
-                  };
-
-                  if (!token) {
-                    setBookingData(bookingDetails);
-                    navigate("/login");
-                  } else {
-                    setBookingData(bookingDetails);
-                    navigate("/confirm");
-                  }
-                }}
-                className={`mt-8 w-full py-5 text-white font-bold rounded-xl transition-all duration-300 text-lg ${
-                  isFormComplete
-                    ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:scale-105 shadow-lg hover:shadow-xl"
-                    : "bg-gray-300 cursor-not-allowed"
-                }`}
-              >
-                {isFormComplete
-                  ? "Reserve This Experience"
-                  : "Fill all fields to reserve"}
-              </button> */}
               <button
                 disabled={!isFormComplete}
                 onClick={() => {
@@ -422,7 +392,6 @@ const ExperienceDetail = () => {
                     pricePerPerson: experience.pricePerHead,
                     totalPrice: Math.round(totalPrice * 1.22),
                   };
-                  console.log(bookingDetails, "bookingg..");
 
                   if (!token) {
                     setBookingData(bookingDetails);

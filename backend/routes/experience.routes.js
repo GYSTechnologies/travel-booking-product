@@ -120,15 +120,18 @@ router.delete(
   deleteExperience
 );
 
+
+router.get("/:id/slots", getAvailableExperienceSlots);
+
+
 // Get a single experience by ID (for editing)
 router.get(
   "/:id",
   protect,
   checkActiveSubscription,
   isHost,
-  checkHostApproval, // ✅ added
+  checkHostApproval, 
   getSingleExperience
 );
 
-router.get("/:id/slots", getAvailableExperienceSlots);
 export default router;

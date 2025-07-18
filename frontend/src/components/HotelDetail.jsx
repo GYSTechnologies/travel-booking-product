@@ -91,7 +91,7 @@ const HotelDetail = () => {
 
   //   fetchAvailability();
   // }, [formData.checkIn, formData.checkOut]);
- 
+
   useEffect(() => {
     const fetchAvailability = async () => {
       if (!formData.checkIn || !formData.checkOut) return;
@@ -330,7 +330,7 @@ const HotelDetail = () => {
             </div>
 
             {/* Host Info */}
-            <div className="bg-white/90 backdrop-blur-lg border border-white/30 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300">
+            {/* <div className="bg-white/90 backdrop-blur-lg border border-white/30 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300">
               <h2 className="text-3xl font-bold text-emerald-700 mb-8 flex items-center gap-3">
                 <Users className="w-8 h-8 text-emerald-600" />
                 Hosted by
@@ -360,6 +360,44 @@ const HotelDetail = () => {
                   </div>
                 </div>
               </div>
+            </div> */}
+
+            <div className="bg-white/80 backdrop-blur-lg border border-white/20 rounded-xl p-6">
+              <h2 className="text-2xl font-bold text-emerald-700 mb-4">
+                About the Host
+              </h2>
+              <div className="flex items-center gap-4">
+                <img
+                  src={
+                    hotel.host?.profileImage ||
+                    "https://i.pravatar.cc/100?img=58"
+                  }
+                  alt="host"
+                  className="w-16 h-16 rounded-full object-cover ring-4 ring-emerald-200"
+                />
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-1 truncate max-w-[200px]">
+                    {hotel.host?.username}
+                  </h3>
+
+                  {/* <p className="text-gray-600 mb-2">{experience.host?.email}</p> */}
+                  <p className="text-gray-600 mb-2 truncate max-w-[200px]">
+                    {hotel.host?.email?.length > 22
+                      ? hotel.host.email.slice(0, 19) + "..."
+                      : hotel.host?.email}
+                  </p>
+
+                  <div className="flex items-center gap-2 text-sm text-emerald-600">
+                    <Shield className="w-4 h-4" />
+                    <span>Verified Host</span>
+                  </div>
+                </div>
+              </div>
+              {hotel.aboutHost && (
+                <p className="text-gray-700 mt-4 leading-relaxed">
+                  {hotel.aboutHost}
+                </p>
+              )}
             </div>
           </div>
 

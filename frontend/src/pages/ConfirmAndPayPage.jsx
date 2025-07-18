@@ -232,7 +232,7 @@ const ConfirmAndPayPage = () => {
       }
 
       const options = {
-        key: "rzp_test_BfK6i6b0E5R9rg",
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: order.amount,
         currency: "INR",
         name: "Ghumakad",

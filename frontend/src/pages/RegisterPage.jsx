@@ -104,24 +104,68 @@ const RegisterPage = () => {
   //   }
   // };
 
+  //   const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setError("");
+  //   setIsLoading(true);
+
+  //   try {
+  //     await registerUser(formData, kycDocs, docTypes);
+
+  //     localStorage.setItem("pendingEmail", formData.email);
+  //     navigate("/verify-otp");
+  //   } catch (err) {
+  //     setError(
+  //       err.response?.data?.message || "Registration failed. Try again later."
+  //     );
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
-  setIsLoading(true);
+    e.preventDefault();
+    setError("");
 
-  try {
-    await registerUser(formData, kycDocs, docTypes);
+    const { username, email, password, phone } = formData;
 
-    localStorage.setItem("pendingEmail", formData.email);
-    navigate("/verify-otp");
-  } catch (err) {
-    setError(
-      err.response?.data?.message || "Registration failed. Try again later."
-    );
-  } finally {
-    setIsLoading(false);
-  }
-};
+    // ✅ Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return setError("Please enter a valid email address.");
+    }
+
+    // ✅ Mobile number validation (only digits, length = 10)
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(phone)) {
+      return setError("Phone number must be exactly 10 digits.");
+    }
+
+    // ✅ Password validation
+    if (password.length < 6) {
+      return setError("Password must be at least 6 characters long.");
+    }
+
+    // ✅ Username check
+    if (!username.trim()) {
+      return setError("Username is required.");
+    }
+
+    setIsLoading(true);
+
+    try {
+      await registerUser(formData, kycDocs, docTypes);
+
+      localStorage.setItem("pendingEmail", formData.email);
+      navigate("/verify-otp");
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Registration failed. Try again later."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center px-4 py-8">
@@ -403,7 +447,7 @@ const RegisterPage = () => {
                             )}
                             <span
                               className="text-sm font-medium text-gray-700 max-w-[150px] truncate whitespace-nowrap overflow-hidden"
-                              title={kycDocs[index].name} 
+                              title={kycDocs[index].name}
                             >
                               {kycDocs[index].name}
                             </span>
