@@ -201,6 +201,60 @@ const AddListingModal = ({
     setImages((prev) => [...prev, ...newImgs].slice(0, 5));
   };
 
+  // Validate required fields dynamically
+  for (const key of activeFields) {
+    const val = formData[key];
+    if (!val || (typeof val === "string" && val.trim() === "")) {
+      toast.error(`Please fill the ${key} field.`);
+      setLoading(false);
+      return;
+    }
+  }
+
+  // ✅ Extra validation for numbers
+  if (type === "hotel") {
+    if (
+      parseInt(formData.pricePerNight) <= 0 ||
+      parseInt(formData.availableRooms) <= 0
+    ) {
+      toast.error("Price and room count must be greater than zero.");
+      setLoading(false);
+      return;
+    }
+  } else {
+    if (parseInt(formData.pricePerHead) <= 0 || !formData.duration.trim()) {
+      toast.error("Price per head and duration are required.");
+      setLoading(false);
+      return;
+    }
+
+    // ✅ Validate all slots
+    for (const [i, slot] of slots.entries()) {
+      if (!slot.time || !slot.maxGuests || parseInt(slot.maxGuests) <= 0) {
+        toast.error(`Please fill valid details for slot ${i + 1}.`);
+        setLoading(false);
+        return;
+      }
+    }
+  }
+
+  // ✅ Validate image count again
+  if (images.length !== 5) {
+    toast.error("Exactly 5 images are required.");
+    setLoading(false);
+    return;
+  }
+
+  // ✅ Validate required documents
+  const docsToCheck = getRequiredDocuments();
+  for (const doc of docsToCheck) {
+    if (!approvedDocsMap[doc] && !documentFiles[doc]) {
+      toast.error(`Please upload document: ${doc}`);
+      setLoading(false);
+      return;
+    }
+  }
+
   const handleSubmit = async () => {
     if (images.length !== 5) {
       return toast.error("Exactly 5 images are required.");

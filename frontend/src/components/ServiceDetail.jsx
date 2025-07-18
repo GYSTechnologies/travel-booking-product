@@ -27,8 +27,6 @@ const ServiceDetail = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedSlotData, setSelectedSlotData] = useState(null);
 
-
-
   const [service, setService] = useState(null);
   const [formData, setFormData] = useState({
     date: "",
@@ -51,17 +49,16 @@ const ServiceDetail = () => {
   // }, [id]);
 
   useEffect(() => {
-  const fetchService = async () => {
-    try {
-      const data = await fetchServiceById(id);
-      setService(data);
-    } catch (err) {
-      console.error("Failed to fetch service:", err);
-    }
-  };
-  fetchService();
-}, [id]);
-
+    const fetchService = async () => {
+      try {
+        const data = await fetchServiceById(id);
+        setService(data);
+      } catch (err) {
+        console.error("Failed to fetch service:", err);
+      }
+    };
+    fetchService();
+  }, [id]);
 
   // const fetchAvailableSlots = async (selectedDate) => {
   //   try {
@@ -75,13 +72,13 @@ const ServiceDetail = () => {
   // };
 
   const fetchAvailableSlots = async (selectedDate) => {
-  try {
-    const data = await fetchServiceSlots(id, selectedDate);
-    setAvailableSlots(data);
-  } catch (err) {
-    console.error("Failed to fetch slots:", err);
-  }
-};
+    try {
+      const data = await fetchServiceSlots(id, selectedDate);
+      setAvailableSlots(data);
+    } catch (err) {
+      console.error("Failed to fetch slots:", err);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -235,7 +232,12 @@ const ServiceDetail = () => {
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     {service.host?.username}
                   </h3>
-                  <p className="text-gray-600 mb-3">{service.host?.email}</p>
+                  {/* <p className="text-gray-600 mb-3">{service.host?.email}</p> */}
+                  <p className="text-gray-600 mb-2 truncate max-w-[200px]">
+                    {service.host?.email?.length > 22
+                      ? service.host.email.slice(0, 19) + "..."
+                      : service.host?.email}
+                  </p>
                   <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full w-fit">
                     <Shield className="w-4 h-4" />
                     <span className="font-medium">Verified Host</span>

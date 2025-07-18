@@ -49,8 +49,7 @@ export const uploadToCloudinary = (localPath, folder = "uploads") => {
           console.error("❌ Cloudinary Upload Failed:", error);
           reject(error);
         } else {
-          console.log("✅ Uploaded to Cloudinary:", result.secure_url);
-          console.log("📦 Resource Type:", result.resource_type);
+          
           resolve(result);
         }
       }

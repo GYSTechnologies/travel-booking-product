@@ -435,7 +435,6 @@ export const updateExperience = async (req, res) => {
 
 export const getHostExperiences = async (req, res) => {
   try {
-    console.log("Decoded User from Token:", req.user); // 🔍 Add this
     const experiences = await Experience.find({ host: req.user._id });
     res.status(200).json({
       message: "Host experiences fetched successfully",

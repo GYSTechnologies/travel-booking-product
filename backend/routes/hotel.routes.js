@@ -116,20 +116,20 @@ router.delete(
   deleteHotel
 );
 
-// Get a single hotel by ID (for editing)
-router.get(
-  "/:id",
-  protect,
-  checkActiveSubscription,
-  isHost,
-  checkHostApproval, // ✅ added
-  getSingleHotel
-);
 
 // Get hotel detail by ID (🟢 user-side route – no middleware)
 router.get("/hotel-detail/:id", getHotelById);
 
 router.get("/:id/availability", getHotelAvailability);
 
+// Get a single hotel by ID (for editing)
+router.get(
+  "/:id",
+  protect,
+  checkActiveSubscription,
+  isHost,
+  checkHostApproval,
+  getSingleHotel
+);
 
 export default router;

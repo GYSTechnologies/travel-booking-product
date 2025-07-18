@@ -38,9 +38,6 @@ router.get("/dashboard/overview", getAdminDashboardStats);
 router.get("/hosts/pending", getPendingHosts); // ✅ all hosts waiting
 router.get("/hosts/approved", getApprovedHosts); 
 router.get("/hosts/rejected", getRejectedHosts);
-router.get("/hosts/:id", getSingleHostDetails); // ✅ single host profile
-router.put("/hosts/:id/approve", approveHost); // ✅ approve host
-router.put("/hosts/:id/reject", rejectHost); // ✅ reject with reason
 
 // 🟢 LISTING MANAGEMENT (hotel/service/experience)
 router.get("/listings/pending", getPendingListings); 
@@ -50,5 +47,10 @@ router.get("/listings/rejected", getRejectedListings);
 router.get("/listings/all", getAllListings); // ✅ All listings across types
 router.put("/listing/:type/:id/approve", approveListing); // ✅ approve one
 router.put("/listing/:type/:id/reject", rejectListing); // ✅ reject one with reason
+
+router.get("/hosts/:id", getSingleHostDetails); // ✅ single host profile
+router.put("/hosts/:id/approve", approveHost); // ✅ approve host
+router.put("/hosts/:id/reject", rejectHost); // ✅ reject with reason
+
 
 export default router;

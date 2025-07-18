@@ -3,12 +3,7 @@ import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "react-toastify";
 
-import {
-  fetchHostProfileAPI,
-  updateHostProfileAPI,
-} from "../api/allAPIs";
-
-
+import { fetchHostProfileAPI, updateHostProfileAPI } from "../api/allAPIs";
 
 const HostProfile = () => {
   const { user, token, updateUser } = useAuth();
@@ -49,20 +44,19 @@ const HostProfile = () => {
   //   }
   // };
   const fetchHostProfile = async () => {
-  try {
-    const userData = await fetchHostProfileAPI(token);
-    setFormData({
-      username: userData.username || "",
-      phone: userData.phone || "",
-      address: userData.address || "",
-      profileImage: userData.profileImage || "",
-    });
-    setProfilePreview(userData.profileImage || "");
-  } catch (err) {
-    toast.error("Failed to fetch host profile");
-  }
-};
-
+    try {
+      const userData = await fetchHostProfileAPI(token);
+      setFormData({
+        username: userData.username || "",
+        phone: userData.phone || "",
+        address: userData.address || "",
+        profileImage: userData.profileImage || "",
+      });
+      setProfilePreview(userData.profileImage || "");
+    } catch (err) {
+      toast.error("Failed to fetch host profile");
+    }
+  };
 
   useEffect(() => {
     fetchHostProfile();
@@ -126,25 +120,29 @@ const HostProfile = () => {
   // };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  try {
-    const updatedUser = await updateHostProfileAPI(token, formData);
-    updateUser(updatedUser);
-    setFormData({
-      username: updatedUser.username || "",
-      phone: updatedUser.phone || "",
-      address: updatedUser.address || "",
-      profileImage: updatedUser.profileImage || "",
-    });
-    setProfilePreview(updatedUser.profileImage || "");
-    toast.success("Profile updated successfully!");
-  } catch (err) {
-    toast.error(err?.response?.data?.message || "Update failed");
-  } finally {
-    setLoading(false);
-  }
-};
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const updatedUser = await updateHostProfileAPI(token, formData);
+        console.log("dsa", updatedUser)
+      updateUser(updatedUser);
+      setFormData({
+        username: updatedUser.username || "",
+        phone: updatedUser.phone || "",
+        address: updatedUser.address || "",
+        profileImage: updatedUser.profileImage || "",
+      });
+      setProfilePreview(updatedUser.profileImage || "");
+
+      toast.success("Profile updated successfully!");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Update failed");
+    } finally {
+      setLoading(false);
+    }
+
+
+  };
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col p-4 sm:p-6">
       <div className="max-w-4xl w-full mx-auto flex flex-col flex-1 overflow-hidden">
