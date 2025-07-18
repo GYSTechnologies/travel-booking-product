@@ -295,9 +295,9 @@ function App() {
 
     try {
       let url = "";
-      if (tab === "hotel") url = "http://localhost:4000/api/host/all-hotels";
-      if (tab === "service") url = "http://localhost:4000/api/services/all-services";
-      if (tab === "experience") url = "http://localhost:4000/api/experiences/all-experiences";
+      if (tab === "hotel") url = "https://ghumakad-web-application.onrender.com/api/host/all-hotels";
+      if (tab === "service") url = "https://ghumakad-web-application.onrender.com/api/services/all-services";
+      if (tab === "experience") url = "https://ghumakad-web-application.onrender.com/api/experiences/all-experiences";
 
       const res = await axios.get(url, {
         params: {

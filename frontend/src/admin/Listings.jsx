@@ -47,7 +47,7 @@ import AddListingModal from "../admin/AddHotelModal";
 
 // 🔁 Dynamic fetch/delete URL and dataKey generator based on listing type
  const getApiConfig = (type) => {
-  const base = "http://localhost:4000/api";
+  const base = "https://ghumakad-web-application.onrender.com/api";
 
   switch (type) {
     case "hotel":

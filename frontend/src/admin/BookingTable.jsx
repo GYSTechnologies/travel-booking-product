@@ -17,7 +17,7 @@ const BookingTable = () => {
   const type = user?.hostType?.[0] || "hotel";
 //get api
   const getApiUrl = () => {
-    const base = "http://localhost:4000/api";
+    const base = "https://ghumakad-web-application.onrender.com/api";
     if (type === "hotel") return `${base}/host/dashboard/bookings`;
     if (type === "services") return `${base}/services/dashboard/bookings`;
     if (type === "experiences") return `${base}/experiences/dashboard/bookings`;

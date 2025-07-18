@@ -26,17 +26,17 @@ connectDB();
 
 const app = express();
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: 'https://ghumakad-web-application.onrender.com',
   credentials: true
 }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  console.log("👣 Request path hit:", req.method, req.originalUrl);
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log("👣 Request path hit:", req.method, req.originalUrl);
+//   next();
+// });
 
 
 

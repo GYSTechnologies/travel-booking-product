@@ -32,7 +32,7 @@ const Dashboard = () => {
   // };
   // Get dashboard stats URL based on host type
  const getDashboardStatsUrl = (hostType) => {
-  const base = "http://localhost:4000/api";
+  const base = "https://ghumakad-web-application.onrender.com/api";
 
   switch (hostType) {
     case "hotel":

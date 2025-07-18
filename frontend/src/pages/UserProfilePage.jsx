@@ -133,7 +133,7 @@ const UserProfilePage = () => {
                     newImage
                       ? formData.profileImage
                       : formData.profileImage
-                      ? formData.profileImage // ✅ no localhost here
+                      ? formData.profileImage 
                       : "/default-avatar.png"
                   }
                   alt="Profile"

@@ -16,7 +16,7 @@ const MagicLogin = () => {
     const verifyToken = async () => {
       try {
         const res = await axios.post(
-          "http://localhost:4000/api/auth/magic-login",
+          "https://ghumakad-web-application.onrender.com/api/auth/magic-login",
           {
             token,
           }

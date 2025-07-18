@@ -398,7 +398,7 @@ export const fetchDashboardStats = async (token) => {
 // };
 
 export const getApiUrls = (type, editMode, id) => {
-  const base = "http://localhost:4000/api";
+  const base = "https://ghumakad-web-application.onrender.com/api";
 
   const isInvalidId = !id || id === ":" || id === "undefined" || id === "null";
 
@@ -441,7 +441,7 @@ export const getApiUrls = (type, editMode, id) => {
 
 // Get dashboard bookings URL based on host type
 export const getDashboardBookingUrl = (type) => {
-  const base = "http://localhost:4000/api";
+  const base = "https://ghumakad-web-application.onrender.com/api";
   if (type === "hotel") return `${base}/host/dashboard/bookings`;
   if (type === "services") return `${base}/services/dashboard/bookings`;
   if (type === "experiences") return `${base}/experiences/dashboard/bookings`;

@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { ReactSortable } from "react-sortablejs";
 
 const getApiUrls = (type, editMode, id) => {
-  const base = "http://localhost:4000/api";
+  const base = "https://ghumakad-web-application.onrender.com/api";
   if (type === "hotel") {
     return {
       url: editMode

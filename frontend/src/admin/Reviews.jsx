@@ -14,7 +14,7 @@ const ReviewsTable = () => {
   const type = user?.hostType?.[0] || "hotel";
 
   const getApiUrl = () => {
-    const base = "http://localhost:4000/api";
+    const base = "https://ghumakad-web-application.onrender.com/api";
     if (type === "hotel") return `${base}/host/dashboard/reviews`;
     if (type === "services") return `${base}/services/dashboard/reviews`;
     if (type === "experiences") return `${base}/experiences/dashboard/reviews`;
