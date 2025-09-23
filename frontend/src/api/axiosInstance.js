@@ -3,7 +3,7 @@ import axios from "axios";
 
 const axiosInstance = (token) =>
   axios.create({
-    baseURL: "https://ghumakad-web-application.onrender.com/api",
+    baseURL: "https://travel-booking-product.vercel.app/api",
     headers: {
       Authorization: `Bearer ${token}`,
     },

@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const superAdminAxios = axios.create({
-  baseURL: "https://ghumakad-web-application.onrender.com",
+  baseURL: "https://travel-booking-product.vercel.app",
 });
 
 // Interceptor to add Bearer token
