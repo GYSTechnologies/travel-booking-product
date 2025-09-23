@@ -14,4 +14,4 @@ backend/.env
 frontend/.env
 
 # Ignore build output
-frontend/dist/
+#frontend/dist/
