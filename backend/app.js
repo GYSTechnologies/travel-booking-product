@@ -26,7 +26,7 @@ connectDB();
 
 const app = express();
 app.use(cors({
-  origin: 'https://ghumakad-web-application.onrender.com',
+  origin: 'https://travel-booking-product.vercel.app',
   credentials: true
 }));
 
