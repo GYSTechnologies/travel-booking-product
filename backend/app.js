@@ -26,7 +26,7 @@ connectDB();
 
 const app = express();
 app.use(cors({
-  origin: 'https://travel-booking-product.vercel.app',
+  origin: '*',
   credentials: true
 }));
 
