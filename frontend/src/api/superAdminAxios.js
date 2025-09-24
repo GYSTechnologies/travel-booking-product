@@ -3,6 +3,8 @@ import axios from "axios";
 
 const superAdminAxios = axios.create({
   baseURL: "https://travel-booking-product.vercel.app",
+    // baseURL: "http://localhost:4000",
+
 });
 
 // Interceptor to add Bearer token

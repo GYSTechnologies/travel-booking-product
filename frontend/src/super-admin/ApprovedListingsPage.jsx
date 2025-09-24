@@ -13,18 +13,6 @@ const ApprovedListingsPage = () => {
 
   
 
-  // const fetchApprovedListings = async () => {
-  //   try {
-  //     const res = await axios.get("http://localhost:4000/api/super-admin/listings/approved", {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     setListings(res.data);
-  //   } catch (error) {
-  //     console.error("Error fetching approved listings:", error);
-  //     toast.error("Failed to fetch approved listings");
-  //   }
-  // };
-
   const loadApprovedListings = async () => {
   try {
     const data = await fetchApprovedListings(token);

@@ -17,7 +17,7 @@ const BookingTable = () => {
   const type = user?.hostType?.[0] || "hotel";
 //get api
   const getApiUrl = () => {
-    const base = "https://ghumakad-web-application.onrender.com/api";
+    const base = "https://travel-booking-product.vercel.app/api";
     if (type === "hotel") return `${base}/host/dashboard/bookings`;
     if (type === "services") return `${base}/services/dashboard/bookings`;
     if (type === "experiences") return `${base}/experiences/dashboard/bookings`;

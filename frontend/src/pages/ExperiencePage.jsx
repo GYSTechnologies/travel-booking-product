@@ -13,27 +13,6 @@ export default function ExperiencesPage() {
     type: "",
   });
 
-  // useEffect(() => {
-  //   const fetchAllExperiences = async () => {
-  //     try {
-  //       const res = await axios.get("http://localhost:4000/api/experiences/all-experiences", {
-  //         params: { place: "all" },
-  //       });
-
-  //       const grouped = res.data.reduce((acc, exp) => {
-  //         if (!acc[exp.state]) acc[exp.state] = [];
-  //         acc[exp.state].push(exp);
-  //         return acc;
-  //       }, {});
-
-  //       setGroupedExperiences(grouped);
-  //     } catch (err) {
-  //       console.error("Failed to load experiences:", err);
-  //     }
-  //   };
-
-  //   fetchAllExperiences();
-  // }, []);
 
   useEffect(() => {
     const loadExperiences = async () => {
@@ -58,11 +37,7 @@ export default function ExperiencesPage() {
     if (!location) return alert("Please enter a location");
 
     try {
-      // const res = await axios.get("http://localhost:4000/api/experiences/all-experiences", {
-      //   params: { place: location, date, type },
-      // });
-      // setSearchResults(res.data);
-
+  
       const data = await searchExperiences({ location, date, type });
       setSearchResults(data);
     } catch (err) {

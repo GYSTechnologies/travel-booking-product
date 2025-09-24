@@ -363,42 +363,9 @@ export const fetchDashboardStats = async (token) => {
 
 
 
-// // Get Create/Update API URL based on listing type
-// export const getApiUrls = (type, editMode, id) => {
-//   const base = "http://localhost:4000/api";
-
-//   switch (type) {
-//     case "hotel":
-//       return {
-//         url: editMode
-//           ? `${base}/host/hotel-update/${id}`
-//           : `${base}/host/hotel-create`,
-//         key: "hotel",
-//       };
-
-//     case "services":
-//       return {
-//         url: editMode
-//           ? `${base}/services/update/${id}`
-//           : `${base}/services/create-service`,
-//         key: "service",
-//       };
-
-//     case "experiences":
-//       return {
-//         url: editMode
-//           ? `${base}/experiences/update/${id}`
-//           : `${base}/experiences/create-experience`,
-//         key: "experience",
-//       };
-
-//     default:
-//       return { url: "", key: "" };
-//   }
-// };
 
 export const getApiUrls = (type, editMode, id) => {
-  const base = "https://ghumakad-web-application.onrender.com/api";
+  const base = "https://travel-booking-product.vercel.app/api";
 
   const isInvalidId = !id || id === ":" || id === "undefined" || id === "null";
 
@@ -441,7 +408,7 @@ export const getApiUrls = (type, editMode, id) => {
 
 // Get dashboard bookings URL based on host type
 export const getDashboardBookingUrl = (type) => {
-  const base = "https://ghumakad-web-application.onrender.com/api";
+  const base = "https://travel-booking-product.vercel.app/api";
   if (type === "hotel") return `${base}/host/dashboard/bookings`;
   if (type === "services") return `${base}/services/dashboard/bookings`;
   if (type === "experiences") return `${base}/experiences/dashboard/bookings`;

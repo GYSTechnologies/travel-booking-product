@@ -14,29 +14,6 @@ export default function ServicesPage() {
     type: "",
   });
 
-  // ✅ Fetch all services and group by category
-  // useEffect(() => {
-  //   const fetchAllServices = async () => {
-  //     try {
-  //       const res = await axios.get("http://localhost:4000/api/services/all-services", {
-  //         params: { place: "all" },
-  //       });
-
-  //       const grouped = res.data.reduce((acc, service) => {
-  //         if (!acc[service.category]) acc[service.category] = [];
-  //         acc[service.category].push(service);
-  //         return acc;
-  //       }, {});
-
-  //       setGroupedServices(grouped);
-  //     } catch (err) {
-  //       console.error("Failed to load services:", err);
-  //     }
-  //   };
-
-  //   fetchAllServices();
-  // }, []);
-
   useEffect(() => {
   const fetchData = async () => {
     try {
@@ -53,22 +30,6 @@ export default function ServicesPage() {
   };
   fetchData();
 }, []);
-
-
-  // ✅ Handle search
-  // const handleSearch = async () => {
-  //   const { location, date, type } = searchData;
-  //   if (!location) return alert("Please enter a location");
-
-  //   try {
-  //     const res = await axios.get("http://localhost:4000/api/services/all-services", {
-  //       params: { place: location, date, type },
-  //     });
-  //     setSearchResults(res.data);
-  //   } catch (err) {
-  //     console.error("Search error:", err);
-  //   }
-  // };
 
   const handleSearch = async () => {
   const { location, date, type } = searchData;

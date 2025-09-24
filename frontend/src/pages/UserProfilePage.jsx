@@ -20,28 +20,6 @@ const UserProfilePage = () => {
   const [newImage, setNewImage] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // useEffect(() => {
-  //   const fetchProfile = async () => {
-  //     try {
-  //       const res = await axios.get("http://localhost:4000/api/user/profile", {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //       });
-  //       const data = res.data;
-  //       setFormData({
-  //         username: data.username || "",
-  //         email: data.email || "",
-  //         phone: data.phone || "",
-  //         address: data.address || "",
-  //         profileImage: data.profileImage || "",
-  //       });
-  //     } catch (err) {
-  //       toast.error("Failed to fetch profile");
-  //       console.error(err);
-  //     }
-  //   };
-  //   if (token) fetchProfile();
-  // }, [token]);
-
   useEffect(() => {
   const loadProfile = async () => {
     try {
@@ -78,32 +56,6 @@ const UserProfilePage = () => {
       }));
     }
   };
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   setLoading(true);
-  //   try {
-  //     const fd = new FormData();
-  //     fd.append("username", formData.username);
-  //     fd.append("phone", formData.phone);
-  //     fd.append("address", formData.address);
-  //     if (newImage) fd.append("profileImage", newImage);
-
-  //     const res = await axios.put("http://localhost:4000/api/user/update", fd, {
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //         "Content-Type": "multipart/form-data",
-  //       },
-  //     });
-
-  //     toast.success("Profile updated!");
-  //     setUser(res.data.user);
-  //   } catch (err) {
-  //     toast.error(err.response?.data?.message || "Update failed");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const handleSubmit = async (e) => {
   e.preventDefault();

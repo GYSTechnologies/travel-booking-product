@@ -18,31 +18,6 @@ const HostProfile = () => {
   const [profilePreview, setProfilePreview] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Prefill from user context
-  // const fetchHostProfile = async () => {
-  //   try {
-  //     const res = await axios.get(
-  //       "http://localhost:4000/api/user/host-profile",
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       }
-  //     );
-
-  //     const userData = res.data.user;
-  //     setFormData({
-  //       username: userData.username || "",
-  //       phone: userData.phone || "",
-  //       address: userData.address || "",
-  //       profileImage: userData.profileImage || "",
-  //     });
-
-  //     setProfilePreview(userData.profileImage || "");
-  //   } catch (err) {
-  //     toast.error("Failed to fetch host profile");
-  //   }
-  // };
   const fetchHostProfile = async () => {
     try {
       const userData = await fetchHostProfileAPI(token);
@@ -73,51 +48,6 @@ const HostProfile = () => {
     setFormData((prev) => ({ ...prev, profileImage: file }));
     setProfilePreview(URL.createObjectURL(file));
   };
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   setLoading(true);
-
-  //   try {
-  //     const form = new FormData();
-  //     form.append("username", formData.username);
-  //     form.append("phone", formData.phone);
-  //     form.append("address", formData.address);
-
-  //     if (formData.profileImage instanceof File) {
-  //       form.append("profileImage", formData.profileImage);
-  //     }
-
-  //     const res = await axios.put(
-  //       "http://localhost:4000/api/user/host-profile-update",
-  //       form,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //           "Content-Type": "multipart/form-data",
-  //         },
-  //       }
-  //     );
-
-  //     // ✅ Update user in context
-  //     updateUser(res.data.user);
-
-  //     // ✅ Reflect updated values in local UI
-  //     setFormData({
-  //       username: res.data.user.username || "",
-  //       phone: res.data.user.phone || "",
-  //       address: res.data.user.address || "",
-  //       profileImage: res.data.user.profileImage || "",
-  //     });
-  //     setProfilePreview(res.data.user.profileImage || "");
-
-  //     toast.success("Profile updated successfully!");
-  //   } catch (err) {
-  //     toast.error(err?.response?.data?.message || "Update failed");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();

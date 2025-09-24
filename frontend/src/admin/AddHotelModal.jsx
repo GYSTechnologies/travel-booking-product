@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { ReactSortable } from "react-sortablejs";
 
 const getApiUrls = (type, editMode, id) => {
-  const base = "https://ghumakad-web-application.onrender.com/api";
+  const base = "https://travel-booking-product.vercel.app/api";
   if (type === "hotel") {
     return {
       url: editMode
@@ -200,6 +200,8 @@ const AddListingModal = ({
     }));
     setImages((prev) => [...prev, ...newImgs].slice(0, 5));
   };
+
+  
 
   // Validate required fields dynamically
   for (const key of activeFields) {

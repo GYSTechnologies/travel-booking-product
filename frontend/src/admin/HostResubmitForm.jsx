@@ -79,7 +79,7 @@ const HostResubmitForm = () => {
 
     try {
       await axios.patch(
-        "https://ghumakad-web-application.onrender.com/api/auth/profile-resubmit", // ✅ correct endpoint
+        "https://travel-booking-product.vercel.app/api/auth/profile-resubmit", // ✅ correct endpoint
         form,
         {
           headers: {

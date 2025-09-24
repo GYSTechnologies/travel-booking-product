@@ -25,6 +25,7 @@ import superAdminRoutes from "./routes/superadmin.routes.js";
 connectDB();
 
 const app = express();
+
 app.use(cors({
   origin: '*',
   credentials: true

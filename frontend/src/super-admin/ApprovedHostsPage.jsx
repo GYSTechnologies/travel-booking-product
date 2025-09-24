@@ -12,28 +12,6 @@ const ApprovedHostsPage = () => {
 
   const { token } = useSuperAdmin(); // ✅ get token
 
-  // const fetchApprovedHosts = async () => {
-  //   if (!token) return;
-  //   try {
-  //     setLoading(true);
-  //     const res = await axios.get(
-  //       "http://localhost:4000/api/super-admin/hosts/approved",
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`, 
-  //         },
-  //       }
-  //     );
-  //     // Use `.hosts` only if backend returns { hosts: [...] }
-  //     setHosts(Array.isArray(res.data.hosts) ? res.data.hosts : res.data);
-  //   } catch (error) {
-  //     console.error("Failed to fetch approved hosts:", error);
-  //     toast.error("Error fetching approved hosts");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const loadApprovedHosts = async () => {
   if (!token) return;
   try {

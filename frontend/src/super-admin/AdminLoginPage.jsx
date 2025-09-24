@@ -24,15 +24,8 @@ const LoginPage = () => {
     }
 
     try {
-      // setLoading(true);
-      // const res = await axios.post(
-      //   "http://localhost:4000/api/super-admin/login",
-      //   form
-      // );
-
-      // const { token, admin } = res.data; // ✅ Correct key here!
-      // loginAdmin(admin, token); // ✅ Now you're passing correct values
-      // toast.success("Logged in successfully");
+   
+     
       setLoading(true);
       const { token, admin } = await superAdminLogin(form);
       loginAdmin(admin, token);

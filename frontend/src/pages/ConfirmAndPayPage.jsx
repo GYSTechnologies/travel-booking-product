@@ -57,27 +57,6 @@ const ConfirmAndPayPage = () => {
   useEffect(() => {
     if (!bookingData) return navigate("/");
 
-    // const fetchItem = async () => {
-    //   try {
-    //     const endpointMap = {
-    //       hotel: `/api/host/hotel-detail/${bookingData.hotelId}`,
-    //       experience: `/api/experiences/experience-detail/${bookingData.experienceId}`,
-    //       service: `/api/services/service-detail/${bookingData.serviceId}`,
-    //     };
-
-    //     const res = await axios.get(
-    //       `http://localhost:4000${endpointMap[type]}`
-    //     );
-
-    //     const responseItem =
-    //       res.data.hotel || res.data.experience || res.data.service || res.data;
-
-    //     setItem(responseItem);
-    //   } catch (err) {
-    //     console.error("Failed to fetch details:", err);
-    //   }
-    // };
-
     const fetchItem = async () => {
       try {
         const data = await fetchItemByType(type, bookingData[`${type}Id`]);
@@ -147,18 +126,6 @@ const ConfirmAndPayPage = () => {
       return;
     }
 
-    // if (type === "hotel") {
-    //   const availabilityRes = await axios.get(
-    //     `http://localhost:4000/api/host/hotel-detail/${bookingData.hotelId}?checkIn=${checkIn}&checkOut=${checkOut}`
-    //   );
-
-    //   const available = availabilityRes.data.availableRooms;
-    //   if (rooms > available) {
-    //     alert(`Only ${available} rooms available for selected dates.`);
-    //     setLoading(false);
-    //     return;
-    //   }
-    // }
 
     if (type === "hotel") {
   const availability = await checkHotelAvailability(
@@ -177,12 +144,7 @@ const ConfirmAndPayPage = () => {
 
 
     try {
-      // const orderRes = await axios.post(
-      //   "http://localhost:4000/api/payment/create-order",
-      //   { amount: total },
-      //   { headers: { Authorization: `Bearer ${token}` } }
-      // );
-
+   
       const order = await createRazorpayOrder(token, total);
 
       const datePart = checkIn?.split("T")[0];
@@ -240,11 +202,7 @@ const ConfirmAndPayPage = () => {
         image: "/logo.png",
         order_id: order.id,
         handler: async function (response) {
-          // await axios.post(
-          //   "http://localhost:4000/api/payment/verify",
-          //   { ...response, bookingDetails },
-          //   { headers: { Authorization: `Bearer ${token}` } }
-          // );
+       
            await verifyPayment(token, response, bookingDetails);
           navigate("/payment-success");
         },

@@ -21,66 +21,6 @@ export default function HomePage({
   const [defaultServices, setDefaultServices] = useState({});
   const [defaultExperiences, setDefaultExperiences] = useState({});
 
-  // useEffect(() => {
-  //   const fetchAllData = async () => {
-  //     try {
-  //       if (tab === "hotel") {
-  //         const res = await axios.get(
-  //           "http://localhost:4000/api/host/all-hotels",
-  //           {
-  //             params: { place: "all" },
-  //           }
-  //         );
-
-  //         const grouped = res.data.reduce((acc, hotel) => {
-  //           if (!acc[hotel.state]) acc[hotel.state] = [];
-  //           acc[hotel.state].push(hotel);
-  //           return acc;
-  //         }, {});
-
-  //         setDefaultHotels(grouped);
-  //       }
-
-  //       if (tab === "service") {
-  //         const res = await axios.get(
-  //           "http://localhost:4000/api/services/all-services",
-  //           {
-  //             params: { place: "all" },
-  //           }
-  //         );
-
-  //         const grouped = res.data.reduce((acc, item) => {
-  //           if (!acc[item.category]) acc[item.category] = [];
-  //           acc[item.category].push(item);
-  //           return acc;
-  //         }, {});
-
-  //         setDefaultServices(grouped);
-  //       }
-
-  //       if (tab === "experience") {
-  //         const res = await axios.get(
-  //           "http://localhost:4000/api/experiences/all-experiences",
-  //           {
-  //             params: { place: "all" },
-  //           }
-  //         );
-
-  //         const grouped = res.data.reduce((acc, item) => {
-  //           if (!acc[item.state]) acc[item.state] = [];
-  //           acc[item.state].push(item);
-  //           return acc;
-  //         }, {});
-
-  //         setDefaultExperiences(grouped);
-  //       }
-  //     } catch (err) {
-  //       console.error("Error loading default data:", err);
-  //     }
-  //   };
-
-  //   fetchAllData();
-  // }, [tab]);
 
   useEffect(() => {
     const fetchAllData = async () => {

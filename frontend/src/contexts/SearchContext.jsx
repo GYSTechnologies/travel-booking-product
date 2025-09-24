@@ -18,26 +18,6 @@ export const SearchProvider = ({ children }) => {
 
   const [searchResults, setSearchResults] = useState([]);
 
-  // const handleSearch = async () => {
-  //   const { location, checkIn, checkOut, guests } = searchData;
-
-  //   if (!location) return alert("Please enter a location");
-
-  //   try {
-  //     const res = await axios.get("http://localhost:4000/api/host/all-hotels", {
-  //       params: {
-  //         place: location,
-  //         checkIn,
-  //         checkOut,
-  //         guests: guests || 1,
-  //       },
-  //     });
-
-  //     setSearchResults(res.data);
-  //   } catch (err) {
-  //     console.error("Search error:", err);
-  //   }
-  // };
 
   const handleSearch = async () => {
   const { location, checkIn, checkOut, guests } = searchData;
