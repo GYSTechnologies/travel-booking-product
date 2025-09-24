@@ -17,22 +17,9 @@ const Dashboard = () => {
     ? user.hostType[0]
     : user?.hostType || "hotel";
 
-  // ✅ Dynamic API based on hostType
-  // const getDashboardStatsUrl = (hostType) => {
-  //   switch (hostType) {
-  //     case "hotel":
-  //       return "http://localhost:4000/api/host/dashboard/stats";
-  //     case "services":
-  //       return "http://localhost:4000/api/services/dashboard/stats";
-  //     case "experiences":
-  //       return "http://localhost:4000/api/experiences/dashboard/stats";
-  //     default:
-  //       return "";
-  //   }
-  // };
   // Get dashboard stats URL based on host type
  const getDashboardStatsUrl = (hostType) => {
-  const base = "https://ghumakad-web-application.onrender.com/api";
+  const base = "https://travel-booking-product.vercel.app/api";
 
   switch (hostType) {
     case "hotel":

@@ -16,7 +16,7 @@ const MagicLogin = () => {
     const verifyToken = async () => {
       try {
         const res = await axios.post(
-          "https://ghumakad-web-application.onrender.com/api/auth/magic-login",
+          "https://travel-booking-product.vercel.app/api/auth/magic-login",
           {
             token,
           }

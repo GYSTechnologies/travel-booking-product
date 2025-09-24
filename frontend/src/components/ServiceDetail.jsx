@@ -34,20 +34,6 @@ const ServiceDetail = () => {
     guests: 1,
   });
 
-  // useEffect(() => {
-  //   const fetchService = async () => {
-  //     try {
-  //       const res = await axios.get(
-  //         `http://localhost:4000/api/services/service-detail/${id}`
-  //       );
-  //       setService(res.data);
-  //     } catch (err) {
-  //       console.error("Failed to fetch service:", err);
-  //     }
-  //   };
-  //   fetchService();
-  // }, [id]);
-
   useEffect(() => {
     const fetchService = async () => {
       try {
@@ -59,17 +45,6 @@ const ServiceDetail = () => {
     };
     fetchService();
   }, [id]);
-
-  // const fetchAvailableSlots = async (selectedDate) => {
-  //   try {
-  //     const res = await axios.get(
-  //       `http://localhost:4000/api/services/${id}/slots?date=${selectedDate}`
-  //     );
-  //     setAvailableSlots(res.data); // Array of { time, maxGuests, bookedGuests }
-  //   } catch (err) {
-  //     console.error("Failed to fetch slots:", err);
-  //   }
-  // };
 
   const fetchAvailableSlots = async (selectedDate) => {
     try {

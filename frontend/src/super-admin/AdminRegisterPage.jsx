@@ -20,7 +20,7 @@ const AdminRegisterPage = () => {
     e.preventDefault();
 
     try {
-      const res = await axios.post("https://ghumakad-web-application.onrender.com/api/super-admin/register", formData);
+      const res = await axios.post("https://travel-booking-product.vercel.app/api/super-admin/register", formData);
       toast.success("Super Admin registered successfully!");
       navigate("/super-admin/login");
     } catch (err) {

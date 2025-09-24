@@ -15,39 +15,10 @@ import {
 import Loader from "../common/Loader";
 import AddListingModal from "../admin/AddHotelModal";
 
-// 🔁 Dynamic API URL generator
-// const getApiConfig = (type) => {
-//   switch (type) {
-//     case "hotel":
-//       return {
-//         fetchUrl: "http://localhost:4000/api/host/hotels",
-//         deleteUrl: (id) => `http://localhost:4000/api/host/hotel-delete/${id}`,
-//         dataKey: "hotels",
-//       };
-//     case "services":
-//       return {
-//         fetchUrl: "http://localhost:4000/api/services/service-listing",
-//         deleteUrl: (id) => `http://localhost:4000/api/services/delete/${id}`,
-//         dataKey: "services",
-//       };
-//     case "experiences":
-//       return {
-//         fetchUrl: "http://localhost:4000/api/experiences/experiences-listing",
-//         deleteUrl: (id) => `http://localhost:4000/api/experiences/delete/${id}`,
-//         dataKey: "experiences",
-//       };
-//     default:
-//       return {
-//         fetchUrl: "",
-//         deleteUrl: () => "",
-//         dataKey: "listings",
-//       };
-//   }
-// };
+const getApiConfig = (type) => {
 
-// 🔁 Dynamic fetch/delete URL and dataKey generator based on listing type
- const getApiConfig = (type) => {
-  const base = "https://ghumakad-web-application.onrender.com/api";
+    const base = "https://travel-booking-product.vercel.app/api";
+
 
   switch (type) {
     case "hotel":

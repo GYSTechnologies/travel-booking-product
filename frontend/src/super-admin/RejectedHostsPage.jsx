@@ -11,31 +11,6 @@ const RejectedHostsPage = () => {
 
   const { token } = useSuperAdmin(); // ✅ get token
 
-  // const fetchRejectedHosts = async () => {
-  //   if (!token) return;
-  //   try {
-  //     setLoading(true);
-  //     const res = await axios.get(
-  //       "http://localhost:4000/api/super-admin/hosts/rejected",
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`, // ✅ attach token
-  //         },
-  //       }
-  //     );
-  //     setHosts(res.data);
-  //   } catch (error) {
-  //     console.error("Failed to fetch rejected hosts:", error);
-  //     toast.error("Failed to fetch rejected hosts");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   fetchRejectedHosts();
-  // }, [token]);
-
   const fetchRejectedHosts = async () => {
   if (!token) return;
   try {

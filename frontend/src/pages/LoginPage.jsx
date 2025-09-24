@@ -29,63 +29,6 @@ const LoginPage = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   setError("");
-  //   setIsLoading(true);
-
-  //   try {
-  //     const res = await axios.post(
-  //       "http://localhost:4000/api/auth/login",
-  //       formData,
-  //       {
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //       }
-  //     );
-
-  //     const { user, token } = res.data;
-
-  //     login(user, token);
-
-  //     if (isHostLogin && user.role === "host") {
-  //       const subRes = await axios.get(
-  //         "http://localhost:4000/api/subscription/status",
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${token}`,
-  //           },
-  //         }
-  //       );
-
-  //       const { isActive } = subRes.data;
-
-  //       if (!isActive) {
-  //         // 🛑 Not subscribed yet
-  //         navigate("/host/subscription");
-  //       } else if (!user.isHostApproved) {
-  //         // 🟡 Subscribed but still waiting for approval
-  //         navigate("/waiting-approval");
-  //       } else {
-  //         // ✅ Subscribed + Approved
-  //         navigate("/host/dashboard");
-  //       }
-  //     } else if (!isHostLogin && user.role === "user") {
-  //       bookingData ? navigate("/confirm") : navigate("/");
-  //     } else {
-  //       setError(
-  //         isHostLogin
-  //           ? "This account is not registered as a host."
-  //           : "This account is not a user account."
-  //       );
-  //     }
-  //   } catch (err) {
-  //     setError(err.response?.data?.message || "Login failed. Try again later.");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
 
   const handleSubmit = async (e) => {
   e.preventDefault();

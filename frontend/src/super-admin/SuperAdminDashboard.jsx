@@ -20,35 +20,6 @@ const SuperAdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const navigate = useNavigate();
 
-  // useEffect(() => {
-  //   const fetchStats = async () => {
-  //     try {
-  //       const token = localStorage.getItem("adminToken");
-  //       if (!token || token === "undefined") {
-  //         throw new Error("No valid token found");
-  //       }
-
-  //       const res = await axios.get("http://localhost:4000/api/super-admin/dashboard/overview", {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       });
-
-  //       setStats(res.data);
-  //     } catch (err) {
-  //       console.error("Failed to fetch dashboard stats", err);
-
-  //       if (err.response?.status === 401) {
-  //         // Token invalid or expired — logout and redirect
-  //         localStorage.removeItem("adminToken");
-  //         localStorage.removeItem("adminData");
-  //         navigate("/super-admin/login");
-  //       }
-  //     }
-  //   };
-
-  //   fetchStats();
-  // }, [navigate]);
 
   useEffect(() => {
     const fetchStats = async () => {

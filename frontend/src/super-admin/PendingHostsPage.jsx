@@ -46,7 +46,7 @@ const PendingHostsPage = () => {
     setLoading(true);
     try {
       const res = await axios.get(
-        "https://ghumakad-web-application.onrender.com/api/super-admin/hosts/pending",
+        "https://travel-booking-product.vercel.app/api/super-admin/hosts/pending",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -65,7 +65,7 @@ const PendingHostsPage = () => {
   const approveHost = async (id) => {
     try {
       await axios.put(
-        `https://ghumakad-web-application.onrender.com/api/super-admin/hosts/${id}/approve`,
+        `https://travel-booking-product.vercel.app/api/super-admin/hosts/${id}/approve`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -82,7 +82,7 @@ const PendingHostsPage = () => {
     if (!selectedHost || !rejectionReason.trim()) return;
     try {
       await axios.put(
-        `https://ghumakad-web-application.onrender.com/api/super-admin/hosts/${selectedHost}/reject`,
+        `https://travel-booking-product.vercel.app/api/super-admin/hosts/${selectedHost}/reject`,
         { reason: rejectionReason },
         {
           headers: { Authorization: `Bearer ${token}` },
